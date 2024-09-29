@@ -6,6 +6,7 @@
     font-family: 'Roboto Condensed', sans-serif;
     text-decoration: none;
     transition: 0.3s;
+    
 }
 section{
     margin: 100px 0;
@@ -64,7 +65,7 @@ header{
     top: 0;
     left: 0;
     right: 0;
-    background-color: #fff;
+    background-color: #a77d54;
     border-bottom: 1px solid #94949450;
     box-shadow: 0px 0px 8px #44444441;
     z-index: 100;
@@ -79,16 +80,16 @@ header nav{
 
 }
 header nav .logo{
-    color: #a77d54;
+    color: #ffffff;
     font-size: 40px;
     font-weight: 800;
     text-transform: uppercase;
 }
 header nav .logo span{
-    color: #a77d54;
+    color: #ffffff;
 }
 header nav .nav-links a{
-    color: #111;
+    color: #ffffff;
     font-weight: 600;
     letter-spacing: 1.2px;
     font-size: 18px;
@@ -97,7 +98,7 @@ header nav .nav-links a{
 }
 header nav .nav-links a:hover,
 header nav .nav-links a.active{
-    color: #000000;
+    color: #c9c5c2;
 }
 header nav .right-nav i{
     color: #111;
