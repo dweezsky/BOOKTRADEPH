@@ -10,7 +10,7 @@
 }
 
 body {
-    background-color: #f4f4f4; /* Light background for the body */
+    background-color: #f4f4f4; 
 }
 
 section {
@@ -46,93 +46,92 @@ section {
     border-radius: 5px;
 }
 
-/* Dropdown Button Styles */
+
 .dropdown {
     position: relative;
     display: inline-block;
-    margin: 20px 0; /* Spacing above the dropdown */
+    margin: 20px 0; 
 }
 
 .dropbtn {
-    background-color: #a77d54; /* Button background color */
-    color: white; /* Button text color */
-    padding: 10px 20px; /* Padding for the button */
-    font-size: 16px; /* Font size */
-    border: none; /* No border */
-    border-radius: 5px; /* Rounded corners */
-    cursor: pointer; /* Pointer cursor on hover */
+    background-color: #a77d54; 
+    color: white; 
+    padding: 10px 20px; 
+    font-size: 16px; 
+    border: none; 
+    border-radius: 5px; 
+    cursor: pointer;
 }
 
 .dropdown-content {
-    display: none; /* Hidden by default */
-    position: absolute; /* Positioning */
-    background-color: white; /* Background color of dropdown */
-    min-width: 160px; /* Minimum width */
-    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2); /* Shadow effect */
-    z-index: 1; /* Ensure it appears above other content */
+    display: none; 
+    position: absolute; 
+    background-color: white; 
+    min-width: 160px; 
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2); 
+    z-index: 1; 
 }
 
 .dropdown-content a {
-    color: black; /* Link color */
-    padding: 12px 16px; /* Padding for links */
-    text-decoration: none; /* No underline */
-    display: block; /* Make links block elements */
+    color: black; 
+    padding: 12px 16px; 
+    text-decoration: none; 
+    display: block; 
 }
 
 .dropdown-content a:hover {
-    background-color: #f1f1f1; /* Background on hover */
+    background-color: #f1f1f1; 
 }
 
 .dropdown:hover .dropdown-content {
-    display: block; /* Show dropdown on hover */
+    display: block; 
 }
 
 .dropdown:hover .dropbtn {
-    background-color: #855b3a; /* Darker button on hover */
+    background-color: #855b3a;
 }
 
-/* Profile Card Styles */
 .profile-card {
-    background-color: white; /* White background for profile card */
-    border-radius: 10px; /* Rounded corners */
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-    padding: 20px; /* Padding inside card */
-    text-align: center; /* Center content */
-    margin: auto; /* Center the card */
-    max-width: 400px; /* Maximum width */
+    background-color: white;
+    border-radius: 10px; 
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    padding: 20px; 
+    text-align: center; 
+    margin: auto; 
+    max-width: 400px; 
 }
 
 .profile-pic {
-    width: 100px; /* Profile picture width */
-    height: 100px; /* Profile picture height */
-    border-radius: 50%; /* Circular profile picture */
-    margin-bottom: 15px; /* Margin below picture */
+    width: 100px; 
+    height: 100px; 
+    border-radius: 50%; 
+    margin-bottom: 15px; 
 }
 
 .profile-name {
-    font-size: 24px; /* Name font size */
-    color: #111; /* Name color */
-    margin-bottom: 5px; /* Margin below name */
+    font-size: 24px; 
+    color: #111;
+    margin-bottom: 5px; 
 }
 
 .profile-email {
-    font-size: 16px; /* Email font size */
-    color: #666; /* Email color */
-    margin-bottom: 15px; /* Margin below email */
+    font-size: 16px; 
+    color: #666; 
+    margin-bottom: 15px;
 }
 
-/* Button styling */
+
 .btn {
     padding: 10px 20px;
     background-color: #a77d54;
     border-radius: 5px;
     color: #fff;
     font-weight: bold;
-    border: none; /* No border */
-    cursor: pointer; /* Pointer cursor */
+    border: none;
+    cursor: pointer; 
 }
 
 .btn:hover {
     background-color: transparent;
-    color: #a77d54; /* Change color on hover */
+    color: #a77d54; 
 }

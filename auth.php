@@ -1,10 +1,10 @@
 <?php
 session_start();
 
-// Database connection
+
 $host = 'localhost';
-$dbUsername = 'root';  // Replace with your database username
-$dbPassword = '';  // Replace with your database password
+$dbUsername = 'root'; 
+$dbPassword = '';  
 $dbName = 'booktradedb';
 
 $conn = new mysqli($host, $dbUsername, $dbPassword, $dbName);
@@ -13,12 +13,12 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Register User
+
 if (isset($_POST['register'])) {
     $firstname = $_POST['firstname'];
     $lastname = $_POST['lastname'];
     $email = $_POST['email'];
-    $password = password_hash($_POST['password'], PASSWORD_BCRYPT);  // Hashing the password for security
+    $password = password_hash($_POST['password'], PASSWORD_BCRYPT);  
 
     $query = "INSERT INTO users (first_name, last_name, email, password) VALUES ('$firstname', '$lastname', '$email', '$password')";
 
@@ -29,7 +29,6 @@ if (isset($_POST['register'])) {
     }
 }
 
-// Login User
 if (isset($_POST['login'])) {
     $email = $_POST['email'];
     $password = $_POST['password'];
@@ -40,11 +39,10 @@ if (isset($_POST['login'])) {
     if ($result->num_rows > 0) {
         $row = $result->fetch_assoc();
         
-        // Verify the password
+
         if (password_verify($password, $row['password'])) {
-            $_SESSION['user'] = $row['first_name'];  // Store the user's first name in session
-            header("Location: homepage.html");  // Redirect to the homepage
-            exit();
+            $_SESSION['user'] = $row['first_name'];  
+            header("Location: homepage.html");  
         } else {
             echo "Invalid password!";
         }
