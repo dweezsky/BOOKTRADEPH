@@ -15,17 +15,33 @@
 <body>
     <header>
         <nav>
-            <a href="#" class="logo">BookTrade<span>PH</span></a>
-            <div class="nav-links">
-                <a href="index.html" class="active">Home</a>
-                <a href="index(2).html">About</a>
-                <a href="index(2).html">Contact</a>
+            <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+
+			<div class="sidebar" id="sidebar">
+				<h2>Menu</h2>
+				<a href="index.html" class="active">Home</a>
+                <a href="about.html">About</a>
+                <a href="contact.html">Contact</a>
                 <a href="index(2).html">Account</a>
+			</div>
+
+            <div class="logo">
+            <a href="/"><img src="img/logo.png" alt="logo"></a> 
             </div>
 
+            <div class="nav-links">
+                <a href="homepage.php" class="active">Home</a>
+                <a href="about.html">About</a>
+                <a href="contact.html">Contact</a>
+                <a href="account.php">Account</a>
+            </div>
+
+            <form class="search-container">
+                <input type="text" id="search-bar" placeholder="Search">
+                <a href="#"><img class="search-icon" src="http://www.endlessicons.com/wp-content/uploads/2012/12/search-icon.png"></a>
+              </form>
+
             <div class="right-nav">
-                <a href="#"><i class="fa-solid fa-magnifying-glass"></i></a>
-                <a href="#"><i class="fa-regular fa-heart"></i></a>
                 <a href="#"><i class="fa-solid fa-cart-shopping"></i></a>
             </div>
         </nav>
@@ -486,8 +502,8 @@
             <div class="row">
                 <h2 class="tittle">Information</h2>
                 <div class="links">
-                    <a href="#">Our Stores</a>
-                    <a href="#">About US</a>
+                    <a href="contact.html">Contact</a>
+                    <a href="about.html">About US</a>
                     <a href="#">Business</a>
                     <a href="#">Delivery</a>
                 </div>
@@ -496,7 +512,7 @@
             <div class="row">
                 <h2 class="tittle">Useful Links</h2>
                 <div class="links">
-                    <a href="#">Our Stores</a>
+                    <a href="contact.html">Contact</a>
                     <a href="#">About US</a>
                     <a href="#">Business</a>
                     <a href="#">Delivery</a>
@@ -506,7 +522,7 @@
             <div class="row">
                 <h2 class="tittle">Service</h2>
                 <div class="links">
-                    <a href="#">Our Stores</a>
+                    <a href="contact.html">Contact</a>
                     <a href="#">About US</a>
                     <a href="#">Business</a>
                     <a href="#">Delivery</a>

@@ -41,14 +41,20 @@ header nav{
     align-items: center;
 
 }
-header nav .logo{
-    color: #ffffff;
-    font-size: 40px;
-    font-weight: 800;
-    text-transform: uppercase;
+.logo{
+    flex: 1;
 }
-header nav .logo span{
-    color: #ffffff;
+.logo a{
+    display: flex;
+    align-items: center;
+    font-size: 20px;
+}
+.logo a:hover{
+    color: white;
+}
+.logo img{
+    width: 100px;
+    margin-left: 0;
 }
 header nav .nav-links a{
     color: #ffffff;
@@ -62,6 +68,7 @@ header nav .nav-links a:hover,
 header nav .nav-links a.active{
     color: #ffffff;
 }
+
 header nav .right-nav i{
     color: #111;
     font-size: 20px;
