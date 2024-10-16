@@ -12,6 +12,7 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
+
 $adminEmail = 'admin@example.com';
 $adminPassword = password_hash('adminpassword', PASSWORD_BCRYPT);
 
@@ -19,11 +20,11 @@ $adminQuery = "SELECT * FROM users WHERE email = '$adminEmail'";
 $adminResult = $conn->query($adminQuery);
 
 if ($adminResult->num_rows == 0) {
- 
     $insertAdminQuery = "INSERT INTO users (first_name, last_name, email, password, role) 
                          VALUES ('Admin', 'User', '$adminEmail', '$adminPassword', 'admin')";
     $conn->query($insertAdminQuery);
 }
+
 
 if (isset($_POST['register'])) {
     $firstname = $_POST['firstname'];
@@ -31,7 +32,8 @@ if (isset($_POST['register'])) {
     $email = $_POST['email'];
     $password = password_hash($_POST['password'], PASSWORD_BCRYPT);
 
-    $query = "INSERT INTO users (first_name, last_name, email, password, role) VALUES ('$firstname', '$lastname', '$email', '$password', 'user')";
+    $query = "INSERT INTO users (first_name, last_name, email, password, role) 
+              VALUES ('$firstname', '$lastname', '$email', '$password', 'user')";
 
     if ($conn->query($query) === TRUE) {
         echo "Registration successful!";
@@ -39,6 +41,7 @@ if (isset($_POST['register'])) {
         echo "Error: " . $query . "<br>" . $conn->error;
     }
 }
+
 
 if (isset($_POST['login'])) {
     $email = $_POST['email'];
@@ -51,14 +54,22 @@ if (isset($_POST['login'])) {
         $row = $result->fetch_assoc();
 
         if (password_verify($password, $row['password'])) {
+   
+            session_unset(); 
+            session_destroy();
+
+
+            session_start();
+
             $_SESSION['user_id'] = $row['id']; 
             $_SESSION['user_name'] = $row['first_name']; 
             $_SESSION['role'] = $row['role'];
 
+      
             if ($row['role'] == 'admin') {
-                header("Location: admin_page.php"); 
+                header("Location: admin_page.php");
             } else {
-                header("Location: homepage.php"); 
+                header("Location: homepage.php");
             }
             exit();
         } else {
@@ -67,6 +78,18 @@ if (isset($_POST['login'])) {
     } else {
         echo "No user found with that email!";
     }
+}
+
+
+if (isset($_POST['logout'])) {
+    session_unset(); 
+    session_destroy();
+
+    echo "<script>
+        localStorage.removeItem('cart');
+        localStorage.removeItem('liked');
+        window.location.href = 'index(2).html'; // Redirect to login page after clearing localStorage
+    </script>";
 }
 
 $conn->close();

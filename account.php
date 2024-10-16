@@ -34,15 +34,16 @@ if (mysqli_num_rows($select_user) > 0) {
     <link rel="stylesheet" href="homepage.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <header>
-        <nav>
+    <nav>
             <div class="logo">
                 <a href="/"><img src="img/logo.png" alt="logo"></a>
             </div>
             <div class="nav-links">
-                <a href="homepage.php" >Home</a>
-                <a href="about.php">About</a>
-                <a href="contact.php">Contact</a>
-                <a href="account.php"class="active">Account</a>
+                <a href="homepage.php">Home</a>
+                <a href="my_purchases.php" >My Purchases</a>
+                <a href="about.html">About</a>
+                <a href="contact.html">Contact</a>
+                <a href="account.php" class="active">Account</a>
             </div>
 
             <form class="search-container">

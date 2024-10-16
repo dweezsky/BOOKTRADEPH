@@ -3,25 +3,33 @@
 <head>
 	<title>Contact us</title>
 	<link rel="stylesheet" type="text/css" href="contact.css">
+	<link rel="stylesheet" href="homepage.css">
 	<link href="https://fonts.googleapis.com/css?family=Quicksand&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 	<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0">
 </head>
 <body>
 	<header>
-        <nav>
+		<nav>
             <div class="logo">
-                <a href="index.html"><img src="img/logo.png" alt="logo"></a> 
-                </div>
-            <div class="nav-links">
-                <a href="index.html" class="active">Home</a>
-                <a href="about.html">About</a>
-                <a href="contact.html">Contact</a>
-                <a href="index(2).html">Account</a>
+                <a href="/"><img src="img/logo.png" alt="logo"></a>
             </div>
-			
+            <div class="nav-links">
+                <a href="homepage.php">Home</a>
+                <a href="my_purchases.php" >My Purchases</a>
+                <a href="about.html">About</a>
+                <a href="contact.html" class="active">Contact</a>
+                <a href="account.php">Account</a>
+            </div>
+
+			<form class="search-container">
+                <input type="text" id="search-bar" placeholder="Search">
+                <a href="#"><img class="search-icon" src="http://www.endlessicons.com/wp-content/uploads/2012/12/search-icon.png"></a>
+            </form>
+
             <div class="right-nav">
-                <button class="btn white-btn" id="loginBtn" onclick="login()">Sign In</button>
-                <button class="btn" id="registerBtn" onclick="register()">Sign Up</button>
+                <a href="liked_products.php"><i class="fa-regular fa-heart"></i></a>
+                <a href="cart.php"><i class="fa-solid fa-cart-shopping"></i></a>
             </div>
         </nav>
     </header>

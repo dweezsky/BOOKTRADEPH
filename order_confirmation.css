@@ -1,0 +1,63 @@
+.order-confirmation-section {
+    padding: 50px;
+    display: flex;
+    justify-content: center;
+}
+
+.container {
+    max-width: 700px;
+    background-color: #fff;
+    padding: 30px;
+    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+
+h2 {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.receipt-details {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.receipt-details p {
+    margin: 5px 0;
+}
+
+.receipt-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.receipt-table th, .receipt-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+}
+
+.receipt-table th {
+    background-color: #f5f5f5;
+}
+
+.total-summary {
+    text-align: right;
+    font-size: 18px;
+    margin-top: 10px;
+}
+
+.btn {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #a77d54;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+.btn:hover {
+    background-color: #855b3a;
+}

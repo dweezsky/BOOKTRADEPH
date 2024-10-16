@@ -4,9 +4,22 @@
 
 session_start();
 
+// Check if the user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php'); // Redirect to login page if not logged in
+    exit;
+}
+
+$user_id = $_SESSION['user_id'];
+
 // Fetch products from the database
 $select_products = mysqli_query($conn, "SELECT * FROM products");
 
+// Fetch the user's cart and liked products from the database
+$cart_items = mysqli_query($conn, "SELECT * FROM user_cart WHERE user_id = '$user_id'");
+
+// Fetch liked products to be used on the liked_products.php page
+$liked_products = mysqli_query($conn, "SELECT * FROM user_likes WHERE user_id = '$user_id'");
 ?>
 
 <!DOCTYPE html>
@@ -139,14 +152,15 @@ $select_products = mysqli_query($conn, "SELECT * FROM products");
 </head>
 <body>
     <header>
-        <nav>
+    <nav>
             <div class="logo">
                 <a href="/"><img src="img/logo.png" alt="logo"></a>
             </div>
             <div class="nav-links">
-                <a href="homepage.php" class="active">Home</a>
-                <a href="about.php">About</a>
-                <a href="contact.php">Contact</a>
+                <a href="homepage.php"class="active">Home</a>
+                <a href="my_purchases.php" >My Purchases</a>
+                <a href="about.html">About</a>
+                <a href="contact.html">Contact</a>
                 <a href="account.php">Account</a>
             </div>
 
@@ -169,7 +183,7 @@ $select_products = mysqli_query($conn, "SELECT * FROM products");
             </div>
 
             <div class="items" id="productList">
-        
+                <!-- Loop through the fetched products from the database -->
                 <?php while ($product = mysqli_fetch_assoc($select_products)) { ?>
                 <div class="item">
                     <img src="uploaded_img/<?php echo $product['image']; ?>" alt="Product Image">
@@ -180,19 +194,18 @@ $select_products = mysqli_query($conn, "SELECT * FROM products");
                             <span>₱<?php echo $product['price']; ?></span>
                         </div>
 
-                    
                         <div class="stock" style="text-align: center;">
                             <p>Stock: <?php echo $product['stock']; ?></p>
                         </div>
 
+                     
                         <div class="icon-product" style="text-align: center;">
-                
-                            <a href="javascript:void(0)" onclick="likeProduct(<?php echo $product['id']; ?>, '<?php echo $product['name']; ?>', '<?php echo $product['price']; ?>', 'uploaded_img/<?php echo $product['image']; ?>')">
+                            <a href="javascript:void(0)" onclick="likeProduct(<?php echo $product['id']; ?>)">
                                 <i class="fa-regular fa-heart"></i>
                             </a>
 
                             <?php if ($product['stock'] > 0) { ?>
-                                <a href="javascript:void(0)" onclick="openModal(<?php echo $product['id']; ?>, '<?php echo $product['name']; ?>', '<?php echo $product['price']; ?>', 'uploaded_img/<?php echo $product['image']; ?>', <?php echo $product['stock']; ?>)">
+                                <a href="javascript:void(0)" onclick="openModal(<?php echo $product['id']; ?>)">
                                     <i class="fa-solid fa-cart-shopping"></i>
                                 </a>
                             <?php } else { ?>
@@ -204,9 +217,7 @@ $select_products = mysqli_query($conn, "SELECT * FROM products");
                 <?php } ?>
             </div>
 
-            <div class="see-more-container">
-                <button class="btn see-more-btn" onclick="showMoreProducts()">See More</button>
-            </div>
+       
         </div>
     </section>
 
@@ -225,21 +236,42 @@ $select_products = mysqli_query($conn, "SELECT * FROM products");
 
     <div id="feedback">Product added to cart</div>
 
-
     <script>
+        // likeProduct Function
+        function likeProduct(productId) {
+            let xhr = new XMLHttpRequest();
+            xhr.open('POST', 'like_product.php', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    if (xhr.responseText === 'liked') {
+                        alert('Product added to your liked list.');
+                    } else if (xhr.responseText === 'already_liked') {
+                        alert('This product is already in your liked list.');
+                    } else {
+                        alert('Error: Could not process your request.');
+                    }
+                }
+            };
+            xhr.send('product_id=' + productId);
+        }
+
+        // Other existing modal and cart functions
         let selectedProduct = {};
 
-        function openModal(id, name, price, image, stock) {
-            selectedProduct = { id, name, price, image, stock };
-
-            document.getElementById('modalImage').src = image;
-            document.getElementById('modalProductName').innerText = name;
-            document.getElementById('modalProductPrice').innerText = "₱" + price;
-            document.getElementById('totalPriceValue').innerText = price;
-            document.getElementById('quantityInput').max = stock; 
-
+        function openModal(id) {
+            selectedProduct = {
+                id: id,
+                name: document.querySelector(`.title-prod`).innerText,
+                price: parseFloat(document.querySelector(`.price span`).innerText.replace('₱', ''))
+            };
+            
+            document.getElementById('modalProductName').innerText = selectedProduct.name;
+            document.getElementById('modalProductPrice').innerText = "₱" + selectedProduct.price;
+            document.getElementById('totalPriceValue').innerText = selectedProduct.price;
             document.getElementById('cartModal').style.display = 'flex';
         }
+
         function updateTotalPrice() {
             let quantity = parseInt(document.getElementById('quantityInput').value);
             let totalPrice = selectedProduct.price * quantity;
@@ -253,86 +285,25 @@ $select_products = mysqli_query($conn, "SELECT * FROM products");
                 return;
             }
 
-            let cartItems = JSON.parse(localStorage.getItem('cart')) || [];
-            let existingProductIndex = cartItems.findIndex(item => item.id === selectedProduct.id);
-
-            if (existingProductIndex !== -1) {
-                let totalQuantity = cartItems[existingProductIndex].quantity + quantity;
-                if (totalQuantity > selectedProduct.stock) {
-                    alert("You can't add more than the available stock.");
-                    return;
+            let xhr = new XMLHttpRequest();
+            xhr.open('POST', 'add_to_cart.php', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    document.getElementById('feedback').style.display = 'block';
+                    setTimeout(() => {
+                        document.getElementById('feedback').style.display = 'none';
+                    }, 2000);
                 }
-                cartItems[existingProductIndex].quantity = totalQuantity;
-            } else {
-                cartItems.push({
-                    id: selectedProduct.id,
-                    name: selectedProduct.name,
-                    price: selectedProduct.price,
-                    quantity: quantity,
-                    image: selectedProduct.image
-                });
-            }
-
-            localStorage.setItem('cart', JSON.stringify(cartItems));
+            };
+            xhr.send(`product_id=${selectedProduct.id}&quantity=${quantity}`);
+            
             document.getElementById('cartModal').style.display = 'none';
-            showFeedback();
-        }
-
-        function likeProduct(id, name, price, image) {
-            let likedProducts = JSON.parse(localStorage.getItem('liked')) || [];
-            let existingProductIndex = likedProducts.findIndex(item => item.id === id);
-
-            if (existingProductIndex === -1) {
-                likedProducts.push({ id, name, price, image });
-                localStorage.setItem('liked', JSON.stringify(likedProducts));
-                loadLikedProducts();
-                alert('Product added to your liked list.');
-            } else {
-                alert('This product is already in your liked list.');
-            }
-        }
-
-        function loadLikedProducts() {
-            let likedProducts = JSON.parse(localStorage.getItem('liked')) || [];
-            let likedProductsList = document.getElementById('likedProductsList');
-            likedProductsList.innerHTML = '';
-
-            likedProducts.forEach(product => {
-                likedProductsList.innerHTML += `
-                    <div class="liked-item">
-                        <img src="${product.image}" alt="${product.name}">
-                        <p>${product.name}</p>
-                        <div class="price">₱${product.price}</div>
-                        <div class="icon-product">
-                            <i class="fa-solid fa-cart-shopping" onclick="openModal(${product.id}, '${product.name}', '${product.price}', '${product.image}', 10)"></i>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        function showFeedback() {
-            let feedback = document.getElementById('feedback');
-            feedback.style.display = 'block';
-            setTimeout(() => {
-                feedback.style.display = 'none';
-            }, 2000);
         }
 
         function closeModal() {
             document.getElementById('cartModal').style.display = 'none';
         }
-
-        function showMoreProducts() {
-            const hiddenItems = document.querySelectorAll('.item.hidden');
-            hiddenItems.forEach(item => {
-                item.classList.remove('hidden');
-            });
-
-            document.querySelector('.see-more-btn').style.display = 'none';
-        }
-
-  
     </script>
 </body>
 </html>

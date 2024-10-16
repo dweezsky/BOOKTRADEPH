@@ -1,0 +1,118 @@
+.liked-products-section {
+    padding: 50px 0;
+}
+
+.liked-products-section h3 {
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 30px;
+}
+
+.liked-products {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 30px;
+}
+
+.liked-products .liked-item {
+    width: 250px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.liked-products .liked-item img {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.liked-products .liked-item .price {
+    font-size: 20px;
+    margin: 10px 0;
+}
+
+.liked-products .liked-item .icon-product {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.liked-products .liked-item .icon-product i {
+    font-size: 22px;
+    cursor: pointer;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    width: 400px;
+    text-align: center;
+    position: relative;
+}
+
+.modal-content img {
+    width: 150px;
+    height: 150px;
+    margin-bottom: 20px;
+}
+
+.modal-content h3, .modal-content p {
+    margin-bottom: 10px;
+}
+
+.modal-content button {
+    padding: 10px 20px;
+    background-color: #a77d54;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.modal-content button:hover {
+    background-color: #855b3a;
+}
+
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    cursor: pointer;
+    color: #888;
+    font-size: 18px;
+}
+
+.close-btn:hover {
+    color: #000;
+}
+
+#feedback {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #28a745;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    display: none;
+}

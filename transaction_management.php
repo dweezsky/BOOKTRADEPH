@@ -1,183 +1,309 @@
-<?php
+<?php 
 @include 'config.php';
 
+// Fetch all order items with user information, grouping by order ID
+$order_items_query = mysqli_query($conn, "
+    SELECT orders.id AS order_id, orders.status, orders.created_at, orders.address, 
+           GROUP_CONCAT(products.name SEPARATOR ', ') AS products, 
+           SUM(order_items.price * order_items.quantity) AS total_amount,
+           users.first_name, users.last_name
+    FROM order_items
+    INNER JOIN orders ON order_items.order_id = orders.id
+    INNER JOIN products ON order_items.product_id = products.id
+    INNER JOIN users ON orders.user_id = users.id
+    GROUP BY orders.id
+    ORDER BY orders.id DESC
+");
 
-$purchase_history = mysqli_query($conn, "SELECT * FROM purchases");
-
-
-$payment_processing = mysqli_query($conn, "SELECT * FROM payments");
-
-$transaction_report = mysqli_query($conn, "SELECT product_name, SUM(total_amount) as total_sales FROM purchases GROUP BY product_name");
-
+$order_items = [];
+while ($row = mysqli_fetch_assoc($order_items_query)) {
+    $order_items[] = $row;
+}
+if (isset($_POST['update_status'])) {
+    $order_id = $_POST['order_id'];
+    mysqli_query($conn, "UPDATE orders SET status = 'Pending' WHERE id = $order_id");
+    header('Location: transaction_management.php'); 
+    exit;
+}
 ?>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
-    <title>Transaction Management</title>
-    <style>
-  
-        .sub-nav-links {
-            margin: 20px 0;
-        }
-        .sub-nav-links a {
-            margin-right: 20px;
-            text-decoration: none;
-            color: #333;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        .sub-nav-links a.active {
-            background-color: #4CAF50;
-            color: white;
-        }
-        .section {
-            display: none;
-        }
-        .section.active {
-            display: block;
-        }
-    </style>
-</head>
-<body>
-
-<header>
+ <header>
     <nav>
         <div class="nav-links">
             <a href="admin_page.php">BOOK MANAGEMENT</a>
             <a href="transaction_management.php" class="active">TRANSACTION MANAGEMENT</a>
             <a href="inventory.php">INVENTORY MANAGEMENT</a>
-            <a href="user_management.php">USER MANAGEMENT</a>
+            <a href="user_management.php" class="active">USER MANAGEMENT</a>
         </div>
     </nav>
 </header>
-
-<div class="container">
+<div class="admin-content">
     <h1>Transaction Management</h1>
 
-    <div class="sub-nav-links">
-        <a href="#purchase-history" class="sub-nav-item active" data-section="purchase-history">Purchase History</a>
-        <a href="#payment-processing" class="sub-nav-item" data-section="payment-processing">Payment Processing</a>
-        <a href="#transaction-reporting" class="sub-nav-item" data-section="transaction-reporting">Transaction Reporting & Analytics</a>
-    </div>
+    <nav>
+        <ul>
+            <li><a href="#" class="tab-link" data-tab="shipping">Shipping</a></li>
+            <li><a href="#" class="tab-link" data-tab="pending">Pending Transactions</a></li>
+            <li><a href="#" class="tab-link" data-tab="completed">Completed Transactions</a></li>
+            <li><a href="#" class="tab-link" data-tab="all">All Transactions</a></li>
+        </ul>
+    </nav>
 
-    <div id="purchase-history" class="section active">
-        <h2>Purchase History</h2>
-        <p>This section provides a detailed view of all purchases made by users or customers.</p>
-        <table class="transaction-table">
-            <thead>
-                <tr>
-                    <th>User/Customer Name</th>
-                    <th>Product/Service Purchased</th>
-                    <th>Date of Purchase</th>
-                    <th>Total Amount</th>
-                    <th>Payment Method</th>
-                    <th>Transaction Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php while ($purchase = mysqli_fetch_assoc($purchase_history)): ?>
-                <tr>
-                    <td><?php echo $purchase['customer_name']; ?></td>
-                    <td><?php echo $purchase['product_name']; ?></td>
-                    <td><?php echo $purchase['purchase_date']; ?></td>
-                    <td><?php echo $purchase['total_amount']; ?></td>
-                    <td><?php echo $purchase['payment_method']; ?></td>
-                    <td><?php echo $purchase['transaction_status']; ?></td>
-                    <td>
-                        <a href="view_purchase.php?id=<?php echo $purchase['id']; ?>" class="btn">View</a>
-                        <a href="process_refund.php?id=<?php echo $purchase['id']; ?>" class="btn">Refund</a>
-                        <a href="dispute_transaction.php?id=<?php echo $purchase['id']; ?>" class="btn">Dispute</a>
-                    </td>
-                </tr>
-                <?php endwhile; ?>
-            </tbody>
-        </table>
-    </div>
+    <section class="transactions">
+ 
+        <div class="transaction-tab active" id="shipping">
+            <h2>Shipping Transactions</h2>
+            <table class="transaction-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer Name</th>
+                        <th>Products</th>
+                        <th>Total Amount</th>
+                        <th>Address</th>
+                        <th>Time of Purchase</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($order_items as $order): ?>
+                      
+                        <tr>
+                            <td><?php echo $order['order_id']; ?></td>
+                            <td><?php echo $order['first_name'] . ' ' . $order['last_name']; ?></td>
+                            <td><?php echo $order['products']; ?></td>
+                            <td>₱<?php echo number_format($order['total_amount'], 2); ?></td>
+                            <td><?php echo $order['address']; ?></td>
+                            <td><?php echo date("F j, Y, g:i a", strtotime($order['created_at'])); ?></td>
+                            <td>
+                                <form method="POST">
+                                    <input type="hidden" name="order_id" value="<?php echo $order['order_id']; ?>">
+                                    <button type="submit" name="update_status" class="btn">to ship</button>
+                                </form>
+                            </td>
+                        </tr>
+                     
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
 
+        <div class="transaction-tab" id="all">
+            <h2>All Transactions</h2>
+            <table class="transaction-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer Name</th>
+                        <th>Products</th>
+                        <th>Total Amount</th>
+                        <th>Address</th>
+                        <th>Time of Purchase</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($order_items as $order): ?>
+                    <tr>
+                        <td><?php echo $order['order_id']; ?></td>
+                        <td><?php echo $order['first_name'] . ' ' . $order['last_name']; ?></td>
+                        <td><?php echo $order['products']; ?></td>
+                        <td>₱<?php echo number_format($order['total_amount'], 2); ?></td>
+                        <td><?php echo $order['address']; ?></td>
+                        <td><?php echo date("F j, Y, g:i a", strtotime($order['created_at'])); ?></td>
+                        <td><?php echo $order['status']; ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
 
-    <div id="payment-processing" class="section">
-        <h2>Payment Processing</h2>
-        <p>Manage and track how payments are processed for transactions.</p>
-        <table class="transaction-table">
-            <thead>
-                <tr>
-                    <th>Payment Method</th>
-                    <th>Status</th>
-                    <th>Payment Gateway</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php while ($payment = mysqli_fetch_assoc($payment_processing)): ?>
-                <tr>
-                    <td><?php echo $payment['payment_method']; ?></td>
-                    <td><?php echo $payment['status']; ?></td>
-                    <td><?php echo $payment['payment_gateway']; ?></td>
-                    <td>
-                        <a href="update_payment_status.php?id=<?php echo $payment['id']; ?>" class="btn">Update Status</a>
-                        <a href="process_refund.php?id=<?php echo $payment['id']; ?>" class="btn">Refund</a>
-                    </td>
-                </tr>
-                <?php endwhile; ?>
-            </tbody>
-        </table>
-    </div>
+        <div class="transaction-tab" id="pending">
+            <h2>Pending Transactions</h2>
+            <table class="transaction-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer Name</th>
+                        <th>Products</th>
+                        <th>Total Amount</th>
+                        <th>Address</th>
+                        <th>Time of Purchase</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($order_items as $order): ?>
+                    <?php if ($order['status'] == 'Pending'): ?>
+                    <tr>
+                        <td><?php echo $order['order_id']; ?></td>
+                        <td><?php echo $order['first_name'] . ' ' . $order['last_name']; ?></td>
+                        <td><?php echo $order['products']; ?></td>
+                        <td>₱<?php echo number_format($order['total_amount'], 2); ?></td>
+                        <td><?php echo $order['address']; ?></td>
+                        <td><?php echo date("F j, Y, g:i a", strtotime($order['created_at'])); ?></td>
+                        <td><?php echo $order['status']; ?></td>
+                    </tr>
+                    <?php endif; ?>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
 
-
-    <div id="transaction-reporting" class="section">
-        <h2>Transaction Reporting and Analytics</h2>
-        <p>Generate reports and insights on transactions to monitor financial health.</p>
-        <table class="transaction-table">
-            <thead>
-                <tr>
-                    <th>Product/Service</th>
-                    <th>Total Sales</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php while ($report = mysqli_fetch_assoc($transaction_report)): ?>
-                <tr>
-                    <td><?php echo $report['product_name']; ?></td>
-                    <td><?php echo $report['total_sales']; ?></td>
-                    <td>
-                        <a href="download_report.php?product=<?php echo $report['product_name']; ?>" class="btn">Download Report</a>
-                        <a href="view_graphs.php?product=<?php echo $report['product_name']; ?>" class="btn">View Graphs</a>
-                    </td>
-                </tr>
-                <?php endwhile; ?>
-            </tbody>
-        </table>
-    </div>
-
+   
+        <div class="transaction-tab" id="completed">
+            <h2>Completed Transactions</h2>
+            <table class="transaction-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer Name</th>
+                        <th>Products</th>
+                        <th>Total Amount</th>
+                        <th>Address</th>
+                        <th>Time of Purchase</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($order_items as $order): ?>
+                    <?php if ($order['status'] == 'Completed'): ?>
+                    <tr>
+                        <td><?php echo $order['order_id']; ?></td>
+                        <td><?php echo $order['first_name'] . ' ' . $order['last_name']; ?></td>
+                        <td><?php echo $order['products']; ?></td>
+                        <td>₱<?php echo number_format($order['total_amount'], 2); ?></td>
+                        <td><?php echo $order['address']; ?></td>
+                        <td><?php echo date("F j, Y, g:i a", strtotime($order['created_at'])); ?></td>
+                        <td><?php echo $order['status']; ?></td>
+                    </tr>
+                    <?php endif; ?>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </section>
 </div>
 
-
 <script>
-    const subNavItems = document.querySelectorAll('.sub-nav-item');
-    const sections = document.querySelectorAll('.section');
+    const tabs = document.querySelectorAll('.tab-link');
+    const tabContents = document.querySelectorAll('.transaction-tab');
 
-    subNavItems.forEach(item => {
-        item.addEventListener('click', function(event) {
-            event.preventDefault();
-            
-            subNavItems.forEach(nav => nav.classList.remove('active'));
-
-            sections.forEach(section => section.classList.remove('active'));
-
-            item.classList.add('active');
-            const targetSection = document.getElementById(item.dataset.section);
-            targetSection.classList.add('active');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function (e) {
+            e.preventDefault();
+            const targetTab = this.getAttribute('data-tab');
+            tabContents.forEach(content => content.classList.remove('active'));
+            document.getElementById(targetTab).classList.add('active');
         });
     });
 </script>
+<style>
+    * {
+    font-family: 'Poppins', sans-serif;
+    margin: 0; padding: 0;
+    box-sizing: border-box;
+    outline: none; border: none;
+    text-decoration: none;
+    text-transform: capitalize;
+}
+    header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: #a77d54;
+    border-bottom: 1px solid #94949450;
+    box-shadow: 0px 0px 8px #44444441;
+    z-index: 100;
+}
 
-</body>
-</html>
+header nav {
+    width: 85%;
+    margin: auto;
+    height: 100px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+header nav .logo {
+    color: #ffffff;
+    font-size: 40px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+header nav .nav-links a {
+    color: #ffffff;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    font-size: 18px;
+    margin: 0 35px;
+    text-transform: capitalize;
+}
+
+header nav .nav-links a:hover {
+    color: #c9c5c2;
+}
+
+    .admin-content {
+        padding: 20px;
+        margin-top: 120px;
+    }
+
+    h1 {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    nav ul {
+        display: flex;
+        justify-content: center;
+        padding: 0;
+    }
+
+    nav ul li {
+        list-style: none;
+        margin: 0 10px;
+    }
+
+    nav ul li a {
+        text-decoration: none;
+        padding: 10px 20px;
+        background-color: #a77d54;
+        color: #fff;
+        border-radius: 5px;
+    }
+
+    nav ul li a:hover {
+        background-color: #855b3a;
+    }
+
+    .transactions {
+        padding: 20px;
+    }
+
+    .transaction-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+
+    .transaction-table th, .transaction-table td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: center;
+    }
+
+    .transaction-table th {
+        background-color: #f5f5f5;
+    }
+
+    .transaction-tab {
+        display: none;
+    }
+
+    .transaction-tab.active {
+        display: block;
+    }
+</style>

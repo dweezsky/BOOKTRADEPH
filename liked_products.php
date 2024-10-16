@@ -1,153 +1,45 @@
+<?php
+session_start();
+@include 'config.php';
+
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit;
+}
+
+$user_id = $_SESSION['user_id'];
+
+// Fetch liked products with product details
+$liked_products = mysqli_query($conn, "
+    SELECT products.* FROM products
+    INNER JOIN user_likes ON products.id = user_likes.product_id
+    WHERE user_likes.user_id = '$user_id'
+");
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Liked Products - BookTrade PH</title>
-
     <link rel="stylesheet" href="homepage.css">
+    <link rel="stylesheet" href="liked_products.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-
-        .liked-products-section {
-            padding: 50px 0;
-        }
-
-        .liked-products-section h3 {
-            text-align: center;
-            margin-bottom: 30px;
-            font-size: 30px;
-        }
-
-        .liked-products {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 30px;
-        }
-
-        .liked-products .liked-item {
-            width: 250px; 
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            padding: 20px; 
-            text-align: center;
-            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .liked-products .liked-item img {
-            width: 150px; 
-            height: 150px;
-            object-fit: cover;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-
-        .liked-products .liked-item .price {
-            font-size: 20px; 
-            margin: 10px 0;
-        }
-
-        .liked-products .liked-item .icon-product {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-        }
-
-        .liked-products .liked-item .icon-product i {
-            font-size: 22px; 
-            cursor: pointer;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            width: 400px;
-            text-align: center;
-            position: relative;
-        }
-
-        .modal-content img {
-            width: 150px;
-            height: 150px;
-            margin-bottom: 20px;
-        }
-
-        .modal-content h3, .modal-content p {
-            margin-bottom: 10px;
-        }
-
-        .modal-content input {
-            width: 80px;
-            padding: 10px;
-            font-size: 16px;
-            margin-bottom: 20px;
-        }
-
-        .modal-content button {
-            padding: 10px 20px;
-            background-color: #a77d54;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .modal-content button:hover {
-            background-color: #855b3a;
-        }
-
-        .close-btn {
-            position: absolute;
-            top: 10px;
-            right: 20px;
-            cursor: pointer;
-            color: #888;
-            font-size: 18px;
-        }
-
-        .close-btn:hover {
-            color: #000;
-        }
-
-        #feedback {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background-color: #28a745;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            display: none;
-        }
-    </style>
+ 
 </head>
 <body>
     <header>
-        <nav>
+    <nav>
             <div class="logo">
                 <a href="/"><img src="img/logo.png" alt="logo"></a>
             </div>
             <div class="nav-links">
-                <a href="index.php">Home</a>
-                <a href="about.php">About</a>
-                <a href="contact.php">Contact</a>
+                <a href="homepage.php">Home</a>
+                <a href="my_purchases.php">My Purchases</a>
+                <a href="about.html">About</a>
+                <a href="contact.html">Contact</a>
                 <a href="account.php">Account</a>
-                <a href="cart.php">Cart</a>
             </div>
 
             <form class="search-container">
@@ -156,7 +48,7 @@
             </form>
 
             <div class="right-nav">
-                <a href="liked_product.php"><i class="fa-solid fa-heart"></i></a>
+                <a href="liked_products.php"><i class="fa-regular fa-heart"></i></a>
                 <a href="cart.php"><i class="fa-solid fa-cart-shopping"></i></a>
             </div>
         </nav>
@@ -164,7 +56,23 @@
 
     <section class="liked-products-section">
         <h3>Your Liked Products</h3>
-        <div class="liked-products" id="likedProductsList"></div>
+        <div class="liked-products">
+            <?php if (mysqli_num_rows($liked_products) > 0) { ?>
+                <?php while ($product = mysqli_fetch_assoc($liked_products)) { ?>
+                    <div class="liked-item">
+                        <img src="uploaded_img/<?php echo $product['image']; ?>" alt="<?php echo $product['name']; ?>">
+                        <p><?php echo $product['name']; ?></p>
+                        <div class="price">₱<?php echo $product['price']; ?></div>
+                        <div class="icon-product">
+                            <i class="fa-solid fa-cart-shopping" onclick="openModal(<?php echo $product['id']; ?>)"></i>
+                            <i class="fa-solid fa-heart" onclick="unlikeProduct(<?php echo $product['id']; ?>)"></i>
+                        </div>
+                    </div>
+                <?php } ?>
+            <?php } else { ?>
+                <p>You have not liked any products yet.</p>
+            <?php } ?>
+        </div>
     </section>
 
     <div id="cartModal" class="modal">
@@ -183,48 +91,40 @@
     <div id="feedback">Product added to cart</div>
 
     <script>
+        function unlikeProduct(product_id) {
+            // Send an AJAX request to remove the product from the liked products in the database
+            let xhr = new XMLHttpRequest();
+            xhr.open('POST', 'unlike_product.php', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    const response = xhr.responseText.trim();
+                    console.log("Response from server:", response);
+                    if (response === "Product unliked.") {
+                        location.reload(); // Reload the page to reflect changes
+                    } else {
+                        alert(response); // Handle other responses or errors
+                    }
+                }
+            };
+            xhr.onerror = function() {
+                alert('An error occurred while processing the request.');
+            };
+            xhr.send('product_id=' + product_id);
+        }
+
         let selectedProduct = {};
 
-        function loadLikedProducts() {
-            let likedProducts = JSON.parse(localStorage.getItem('liked')) || [];
-            let likedProductsList = document.getElementById('likedProductsList');
-            likedProductsList.innerHTML = '';
-
-            likedProducts.forEach(product => {
-                likedProductsList.innerHTML += `
-                    <div class="liked-item">
-                        <img src="${product.image}" alt="${product.name}">
-                        <p>${product.name}</p>
-                        <div class="price">₱${product.price}</div>
-                        <div class="icon-product">
-                            <!-- Cart Icon -->
-                            <i class="fa-solid fa-cart-shopping" onclick="openModal(${product.id}, '${product.name}', '${product.price}', '${product.image}', 10)"></i>
-                            <!-- Solid Heart Icon for unliking -->
-                            <i class="fa-solid fa-heart" onclick="unlikeProduct(${product.id})"></i>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        function unlikeProduct(productId) {
-            let likedProducts = JSON.parse(localStorage.getItem('liked')) || [];
-            likedProducts = likedProducts.filter(product => product.id !== productId); // Ensure we're filtering by ID
-            localStorage.setItem('liked', JSON.stringify(likedProducts));
-
-            loadLikedProducts();
-        }
-
-        function openModal(id, name, price, image, stock) {
-            selectedProduct = { id, name, price, image, stock };
-
-
-            document.getElementById('modalImage').src = image;
-            document.getElementById('modalProductName').innerText = name;
-            document.getElementById('modalProductPrice').innerText = "₱" + price;
-            document.getElementById('totalPriceValue').innerText = price;
-            document.getElementById('quantityInput').max = stock; 
-
+        function openModal(id) {
+            selectedProduct = {
+                id: id,
+                name: document.querySelector(`.title-prod`).innerText,
+                price: parseFloat(document.querySelector(`.price span`).innerText.replace('₱', ''))
+            };
+            
+            document.getElementById('modalProductName').innerText = selectedProduct.name;
+            document.getElementById('modalProductPrice').innerText = "₱" + selectedProduct.price;
+            document.getElementById('totalPriceValue').innerText = selectedProduct.price;
             document.getElementById('cartModal').style.display = 'flex';
         }
 
@@ -241,44 +141,25 @@
                 return;
             }
 
-            let cartItems = JSON.parse(localStorage.getItem('cart')) || [];
-            let existingProductIndex = cartItems.findIndex(item => item.id === selectedProduct.id);
-
-            if (existingProductIndex !== -1) {
-                let totalQuantity = cartItems[existingProductIndex].quantity + quantity;
-                if (totalQuantity > selectedProduct.stock) {
-                    alert("You can't add more than the available stock.");
-                    return;
+            let xhr = new XMLHttpRequest();
+            xhr.open('POST', 'add_to_cart.php', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    document.getElementById('feedback').style.display = 'block';
+                    setTimeout(() => {
+                        document.getElementById('feedback').style.display = 'none';
+                    }, 2000);
                 }
-                cartItems[existingProductIndex].quantity = totalQuantity;
-            } else {
-                cartItems.push({
-                    id: selectedProduct.id,
-                    name: selectedProduct.name,
-                    price: selectedProduct.price,
-                    quantity: quantity,
-                    image: selectedProduct.image
-                });
-            }
-
-            localStorage.setItem('cart', JSON.stringify(cartItems));
+            };
+            xhr.send(`product_id=${selectedProduct.id}&quantity=${quantity}`);
+            
             document.getElementById('cartModal').style.display = 'none';
-            showFeedback();
-        }
-
-        function showFeedback() {
-            let feedback = document.getElementById('feedback');
-            feedback.style.display = 'block';
-            setTimeout(() => {
-                feedback.style.display = 'none';
-            }, 2000);
         }
 
         function closeModal() {
             document.getElementById('cartModal').style.display = 'none';
         }
-
-        document.addEventListener('DOMContentLoaded', loadLikedProducts);
     </script>
 </body>
 </html>
