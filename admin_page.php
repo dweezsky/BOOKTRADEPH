@@ -53,19 +53,27 @@ if (isset($_POST['add_product'])) {
     $product_image_tmp_name = $_FILES['product_image']['tmp_name'];
     $product_image_folder = 'uploaded_img/' . $product_image;
 
+    // Ensure the upload directory exists
     if (!file_exists('uploaded_img')) {
         mkdir('uploaded_img', 0777, true);
     }
 
+    // Check if all required fields are filled
     if (empty($product_name) || empty($product_price) || empty($product_stock) || empty($product_image) || empty($product_description)) {
         $message[] = 'Please fill out all fields';
     } else {
-        $insert = "INSERT INTO products (name, price, stock, description, image) 
-                   VALUES ('$product_name', '$product_price', '$product_stock', '$product_description', '$product_image')";
-        $upload = mysqli_query($conn, $insert);
+        // Insert product into the database
+        $insert_query = "
+            INSERT INTO products (name, price, stock, description, image) 
+            VALUES ('$product_name', '$product_price', '$product_stock', '$product_description', '$product_image')
+        ";
+        
+        $upload_success = mysqli_query($conn, $insert_query);
 
-        if ($upload && move_uploaded_file($product_image_tmp_name, $product_image_folder)) {
-            $message[] = 'New product added successfully';
+        if ($upload_success && move_uploaded_file($product_image_tmp_name, $product_image_folder)) {
+            // Redirect to the admin page with a success query parameter
+            header('Location: admin_page.php?product_added=1');
+            exit;
         } else {
             $message[] = 'Could not add the product to the database';
         }
@@ -264,31 +272,38 @@ if (isset($message)) {
         <?php } ?>
     </table>
 </div>
-<div class="container1">
 
 
-    <div id="notificationModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeNotificationModal()">&times;</span>
-            <h3>Notifications</h3>
-            <div id="notificationContent">
-                <?php if (mysqli_num_rows($notifications_query) > 0) { 
-                    while ($notification = mysqli_fetch_assoc($notifications_query)) { 
-                        $message = ($notification['status'] == 'Canceled') 
-                            ? "Order canceled: {$notification['product_names']}" 
-                            : "Order received: {$notification['product_names']}";
-                ?>
-                <div>
-                    <p><?php echo $message; ?></p>
-                    <p><small>Order ID: <?php echo $notification['order_id']; ?></small></p>
+
+<div id="notificationModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeNotificationModal()">&times;</span>
+        <h3 class="notification-header">Notifications</h3>
+        <div id="notificationContainer" class="notification-container">
+            <?php if (mysqli_num_rows($notifications_query) > 0) { 
+                while ($notification = mysqli_fetch_assoc($notifications_query)) { 
+                    $status_message = ($notification['status'] == 'Canceled') 
+                        ? "Order canceled" 
+                        : "Order received";
+
+                    // Detailed notification message
+                    $detailed_message = "{$status_message}: {$notification['product_names']}";
+            ?>
+            <div class="notification-item">
+                <div class="notification-header-item">
+                    <strong><?php echo $status_message; ?></strong>
+                    <span class="order-id">Order ID: <?php echo $notification['order_id']; ?></span>
                 </div>
-                <?php } 
-                } else { ?>
-                    <p>No notifications available.</p>
-                <?php } ?>
+                <p><?php echo $notification['product_names']; ?></p>
+                <small>Status: <strong><?php echo $notification['status']; ?></strong></small>
             </div>
+            <?php } 
+            } else { ?>
+            <p>No notifications available.</p>
+            <?php } ?>
         </div>
     </div>
+</div>
 
     <div id="profileModal" class="modal">
         <div class="modal-content">
@@ -303,18 +318,16 @@ if (isset($message)) {
 
 </div>
 <script>
- function openNotificationModal() {
-    // Open the modal
-    document.getElementById('notificationModal').style.display = 'flex';
+function openNotificationModal() {
+    const modal = document.getElementById('notificationModal');
+    modal.style.display = 'flex';
 
-    // Send AJAX request to mark notifications as read
     const xhr = new XMLHttpRequest();
     xhr.open('POST', 'mark_notifications_read.php', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.onreadystatechange = function() {
+    xhr.onreadystatechange = function () {
         if (xhr.readyState === 4 && xhr.status === 200) {
             console.log('Notifications marked as read');
-            // Hide the badge after marking notifications as read
             document.querySelector('.notification-badge').style.display = 'none';
         }
     };
@@ -331,6 +344,12 @@ function closeNotificationModal() {
     function closeProfileModal() {
         document.getElementById('profileModal').style.display = 'none';
     }
+    window.onload = function () {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('product_added')) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+};
 </script>
 </body>
 </html>
