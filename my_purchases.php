@@ -11,6 +11,8 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 $user_query = mysqli_query($conn, "SELECT first_name, last_name, email FROM users WHERE id = '$user_id'");
 
+
+$select_products = mysqli_query($conn, "SELECT * FROM products");
 if ($user_query && mysqli_num_rows($user_query) > 0) {
     $user = mysqli_fetch_assoc($user_query);
     $user['name'] = $user['first_name'] . ' ' . $user['last_name']; // Combine first and last names
@@ -112,7 +114,7 @@ if (isset($_POST['confirm_receive'])) {
 
         <div class="modal-buttons">
             <button class="btn" onclick="window.location.href='my_purchases.php'">Purchase History</button>
-            <button class="btn btn-logout" onclick="window.location.href='logout.php'">Logout</button>
+            <button class="btn btn-logout" onclick="window.location.href='index(2).html'">Logout</button>
         </div>
     </div>
 </div>
@@ -325,27 +327,51 @@ if (isset($_POST['confirm_receive'])) {
             document.getElementById(targetTab).classList.add('active');
         });
     });
-     // Open the notification modal
-        function openNotificationModal() {
+            // Open the notification modal
+            function openNotificationModal() {
     const modal = document.getElementById('notificationModal');
-    modal.classList.add('show'); // Open the modal
+    modal.classList.add('show');
 
     const xhr = new XMLHttpRequest();
-    xhr.open('GET', 'notification.php', true); // Fetch notifications via AJAX
+    xhr.open('GET', 'notification.php', true);
 
     xhr.onload = function () {
         if (xhr.status === 200) {
-            console.log('Notification Response:', xhr.responseText); // Debugging
+            const response = JSON.parse(xhr.responseText); // Parse the JSON response
 
-            document.getElementById('notificationContent').innerHTML = xhr.responseText;
+            // Update the notification content
+            document.getElementById('notificationContent').innerHTML = response.html;
+
+            // Reset the badge count after viewing notifications
+            document.getElementById('notificationBadge').style.display = 'none';
         } else {
             document.getElementById('notificationContent').innerHTML = '<p>No notifications available.</p>';
         }
     };
 
     xhr.onerror = function () {
-        console.error('Error loading notifications.');
         document.getElementById('notificationContent').innerHTML = '<p>Error loading notifications. Please try again.</p>';
+    };
+
+    xhr.send();
+}
+// Load unread notification count on page load
+function loadNotificationCount() {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', 'notification.php', true);
+
+    xhr.onload = function () {
+        if (xhr.status === 200) {
+            const response = JSON.parse(xhr.responseText);
+            const badge = document.getElementById('notificationBadge');
+
+            if (response.unread_count > 0) {
+                badge.style.display = 'inline-block';
+                badge.textContent = response.unread_count;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
     };
 
     xhr.send();
@@ -355,25 +381,22 @@ function closeNotificationModal() {
     document.getElementById('notificationModal').classList.remove('show');
 }
 
- // Open and close the profile modal
- function openProfileModal() {
-    document.getElementById('profileModal').style.display = 'block';
-    sessionStorage.setItem('profileModalOpen', 'true'); // Store the state as open
+// Open and close the profile modal
+function openProfileModal() {
+    const modal = document.getElementById('profileModal');
+    modal.style.display = 'flex'; // Show modal using flexbox
 }
 
+// Close the profile modal
 function closeProfileModal() {
-    document.getElementById('profileModal').style.display = 'none';
-    sessionStorage.setItem('profileModalOpen', 'false'); // Store the state as closed
+    const modal = document.getElementById('profileModal');
+    modal.style.display = 'none'; // Hide modal
 }
 
-// Check modal state on page load and apply the correct state
+// Ensure the modal state is correctly managed on page load
 window.onload = function () {
-    const isModalOpen = sessionStorage.getItem('profileModalOpen');
-    if (isModalOpen === 'true') {
-        document.getElementById('profileModal').style.display = 'block';
-    } else {
-        document.getElementById('profileModal').style.display = 'none';
-    }
+    const modal = document.getElementById('profileModal');
+    modal.style.display = 'none'; // Make sure modal is hidden on load
 };
     </script>
 

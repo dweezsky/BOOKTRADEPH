@@ -17,6 +17,8 @@ if ($user_query && mysqli_num_rows($user_query) > 0) {
 } else {
     $user = ['name' => 'Unknown', 'email' => 'Not available']; // Fallback values if query fails
 }
+// Fetch products from the database
+$select_products = mysqli_query($conn, "SELECT * FROM products");
 // Fetch orders based on their status for the logged-in user
 $orders_query = mysqli_query($conn, "
     SELECT orders.id AS order_id, orders.status, orders.created_at, orders.received_at, 
@@ -114,6 +116,7 @@ if (isset($_POST['confirm_receive'])) {
 				<a href="cart.php"><i class="fa-solid fa-cart-shopping"></i></a>
 					<a href="javascript:void(0);" onclick="openNotificationModal()">
 						<i class="fa-regular fa-bell"></i>
+                        <span id="notificationBadge" class="badge">0</span>
 					</a>
 					<a href="javascript:void(0);" onclick="openProfileModal()">
 						<i class="fa-regular fa-user"></i>
@@ -133,16 +136,16 @@ if (isset($_POST['confirm_receive'])) {
 </div>
 </div>
  <!-- Profile Modal -->
+ <!-- Profile Modal -->
  <div id="profileModal" class="profile-modal">
     <div class="profile-modal-content">
         <span class="close-profile-btn" onclick="closeProfileModal()">&times;</span>
         <h3>Account Information</h3>
         <p><strong>Name:</strong> <?php echo htmlspecialchars($user['name']); ?></p>
         <p><strong>Email:</strong> <?php echo htmlspecialchars($user['email']); ?></p>
-
         <div class="modal-buttons">
             <button class="btn" onclick="window.location.href='my_purchases.php'">Purchase History</button>
-            <button class="btn btn-logout" onclick="window.location.href='logout.php'">Logout</button>
+            <button class="btn btn-logout" onclick="window.location.href='index(2).html'">Logout</button>
         </div>
     </div>
 </div>
@@ -205,31 +208,59 @@ if (isset($_POST['confirm_receive'])) {
 		</div>
 	</section>
 <script>
-	// Open the notification modal
-	function openNotificationModal() {
+	     // Open the notification modal
+         function openNotificationModal() {
     const modal = document.getElementById('notificationModal');
-    modal.classList.add('show'); // Open the modal
+    modal.classList.add('show');
 
     const xhr = new XMLHttpRequest();
-    xhr.open('GET', 'notification.php', true); // Fetch notifications via AJAX
+    xhr.open('GET', 'notification.php', true);
 
     xhr.onload = function () {
         if (xhr.status === 200) {
-            console.log('Notification Response:', xhr.responseText); // Debugging
+            const response = JSON.parse(xhr.responseText); // Parse the JSON response
 
-            document.getElementById('notificationContent').innerHTML = xhr.responseText;
+            // Update the notification content
+            document.getElementById('notificationContent').innerHTML = response.html;
+
+            // Reset the badge count after viewing notifications
+            document.getElementById('notificationBadge').style.display = 'none';
         } else {
             document.getElementById('notificationContent').innerHTML = '<p>No notifications available.</p>';
         }
     };
 
     xhr.onerror = function () {
-        console.error('Error loading notifications.');
         document.getElementById('notificationContent').innerHTML = '<p>Error loading notifications. Please try again.</p>';
     };
 
     xhr.send();
 }
+
+// Load unread notification count on page load
+function loadNotificationCount() {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', 'notification.php', true);
+
+    xhr.onload = function () {
+        if (xhr.status === 200) {
+            const response = JSON.parse(xhr.responseText);
+            const badge = document.getElementById('notificationBadge');
+
+            if (response.unread_count > 0) {
+                badge.style.display = 'inline-block';
+                badge.textContent = response.unread_count;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    };
+
+    xhr.send();
+}
+
+// Call this function when the page loads
+window.onload = loadNotificationCount;
 
 function closeNotificationModal() {
     document.getElementById('notificationModal').classList.remove('show');
@@ -237,23 +268,20 @@ function closeNotificationModal() {
 
  // Open and close the profile modal
  function openProfileModal() {
-    document.getElementById('profileModal').style.display = 'block';
-    sessionStorage.setItem('profileModalOpen', 'true'); // Store the state as open
+    const modal = document.getElementById('profileModal');
+    modal.style.display = 'flex'; // Show modal using flexbox
 }
 
+// Close the profile modal
 function closeProfileModal() {
-    document.getElementById('profileModal').style.display = 'none';
-    sessionStorage.setItem('profileModalOpen', 'false'); // Store the state as closed
+    const modal = document.getElementById('profileModal');
+    modal.style.display = 'none'; // Hide modal
 }
 
-// Check modal state on page load and apply the correct state
+// Ensure the modal state is correctly managed on page load
 window.onload = function () {
-    const isModalOpen = sessionStorage.getItem('profileModalOpen');
-    if (isModalOpen === 'true') {
-        document.getElementById('profileModal').style.display = 'block';
-    } else {
-        document.getElementById('profileModal').style.display = 'none';
-    }
+    const modal = document.getElementById('profileModal');
+    modal.style.display = 'none'; // Make sure modal is hidden on load
 };
     </script>
   <footer class="footer">

@@ -2,18 +2,18 @@
 @include 'config.php';
 session_start();
 
-// Check if the admin is logged in
+
 if (!isset($_SESSION['user_id'])) {
     header('Location: admin_page.php');
     exit;
 }
 
-// Fetch admin account details
+
 $user_id = $_SESSION['user_id'];
 $admin_query = mysqli_query($conn, "SELECT first_name, last_name, email FROM users WHERE id = '$user_id'");
 $admin = mysqli_fetch_assoc($admin_query);
 
-// Fetch notifications and unread count
+
 $notifications_query = mysqli_query($conn, "
     SELECT 
         orders.id AS order_id, 
@@ -27,7 +27,6 @@ $notifications_query = mysqli_query($conn, "
     ORDER BY orders.created_at DESC
 ");
 
-// Test the unread notification count query
 $unread_query = mysqli_query($conn, "
     SELECT COUNT(*) AS unread_count 
     FROM orders 
@@ -42,8 +41,6 @@ $unread_result = mysqli_fetch_assoc($unread_query);
 $unread_count = $unread_result['unread_count'];
 
 
-
-// Add product logic
 if (isset($_POST['add_product'])) {
     $product_name = mysqli_real_escape_string($conn, $_POST['product_name']);
     $product_price = $_POST['product_price'];
@@ -53,16 +50,16 @@ if (isset($_POST['add_product'])) {
     $product_image_tmp_name = $_FILES['product_image']['tmp_name'];
     $product_image_folder = 'uploaded_img/' . $product_image;
 
-    // Ensure the upload directory exists
+    
     if (!file_exists('uploaded_img')) {
         mkdir('uploaded_img', 0777, true);
     }
 
-    // Check if all required fields are filled
+  
     if (empty($product_name) || empty($product_price) || empty($product_stock) || empty($product_image) || empty($product_description)) {
         $message[] = 'Please fill out all fields';
     } else {
-        // Insert product into the database
+   
         $insert_query = "
             INSERT INTO products (name, price, stock, description, image) 
             VALUES ('$product_name', '$product_price', '$product_stock', '$product_description', '$product_image')
@@ -71,7 +68,7 @@ if (isset($_POST['add_product'])) {
         $upload_success = mysqli_query($conn, $insert_query);
 
         if ($upload_success && move_uploaded_file($product_image_tmp_name, $product_image_folder)) {
-            // Redirect to the admin page with a success query parameter
+    
             header('Location: admin_page.php?product_added=1');
             exit;
         } else {
@@ -80,7 +77,6 @@ if (isset($_POST['add_product'])) {
     }
 }
 
-// Delete product logic
 if (isset($_GET['delete'])) {
     $id = $_GET['delete'];
     mysqli_query($conn, "DELETE FROM products WHERE id = $id");
@@ -150,7 +146,7 @@ if (isset($_GET['delete'])) {
     cursor: pointer;
     font-size: 25px;
     color: white;
-
+ margin-left: 30px;
 }
 
 .notification-badge {
@@ -286,7 +282,7 @@ if (isset($message)) {
                         ? "Order canceled" 
                         : "Order received";
 
-                    // Detailed notification message
+            
                     $detailed_message = "{$status_message}: {$notification['product_names']}";
             ?>
             <div class="notification-item">
@@ -311,7 +307,7 @@ if (isset($message)) {
             <h3>Admin Information</h3>
             <p><strong>Name:</strong> <?php echo htmlspecialchars($admin['first_name'] . ' ' . $admin['last_name']); ?></p>
             <p><strong>Email:</strong> <?php echo htmlspecialchars($admin['email']); ?></p>
-            <button class="btn btn-logout" onclick="window.location.href='logout.php'">Logout</button>
+            <button class="btn btn-logout" onclick="window.location.href='index(2).html'">Logout</button>
         </div>
     </div>
 </div>

@@ -4,7 +4,7 @@
 session_start();
 // Check if the user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php'); // Redirect to login page if not logged in
+    header('Location: homepage.php'); // Redirect to login page if not logged in
     exit;
 }
 $user_id = $_SESSION['user_id'];
@@ -142,16 +142,16 @@ $liked_products = mysqli_query($conn, "SELECT * FROM user_likes WHERE user_id = 
 </div>
 </div>
  <!-- Profile Modal -->
+ <!-- Profile Modal -->
  <div id="profileModal" class="profile-modal">
     <div class="profile-modal-content">
         <span class="close-profile-btn" onclick="closeProfileModal()">&times;</span>
         <h3>Account Information</h3>
         <p><strong>Name:</strong> <?php echo htmlspecialchars($user['name']); ?></p>
         <p><strong>Email:</strong> <?php echo htmlspecialchars($user['email']); ?></p>
-
         <div class="modal-buttons">
             <button class="btn" onclick="window.location.href='my_purchases.php'">Purchase History</button>
-            <button class="btn btn-logout" onclick="window.location.href='logout.php'">Logout</button>
+            <button class="btn btn-logout" onclick="window.location.href='index(2).html'">Logout</button>
         </div>
     </div>
 </div>
@@ -160,7 +160,7 @@ $liked_products = mysqli_query($conn, "SELECT * FROM user_likes WHERE user_id = 
     <section class="products">
         <div class="contnaier">
             <div class="top-sec">
-                <h3>New Products</h3>
+                <h3>BookTradePH</h3>
             </div>
 
             <div class="items" id="productList">
@@ -357,25 +357,22 @@ function closeNotificationModal() {
     document.getElementById('notificationModal').classList.remove('show');
 }
 
- // Open and close the profile modal
- function openProfileModal() {
-    document.getElementById('profileModal').style.display = 'block';
-    sessionStorage.setItem('profileModalOpen', 'true'); // Store the state as open
+// Open and close the profile modal
+function openProfileModal() {
+    const modal = document.getElementById('profileModal');
+    modal.style.display = 'flex'; // Show modal using flexbox
 }
 
+// Close the profile modal
 function closeProfileModal() {
-    document.getElementById('profileModal').style.display = 'none';
-    sessionStorage.setItem('profileModalOpen', 'false'); // Store the state as closed
+    const modal = document.getElementById('profileModal');
+    modal.style.display = 'none'; // Hide modal
 }
 
-// Check modal state on page load and apply the correct state
+// Ensure the modal state is correctly managed on page load
 window.onload = function () {
-    const isModalOpen = sessionStorage.getItem('profileModalOpen');
-    if (isModalOpen === 'true') {
-        document.getElementById('profileModal').style.display = 'block';
-    } else {
-        document.getElementById('profileModal').style.display = 'none';
-    }
+    const modal = document.getElementById('profileModal');
+    modal.style.display = 'none'; // Make sure modal is hidden on load
 };
     </script>
   <footer class="footer">

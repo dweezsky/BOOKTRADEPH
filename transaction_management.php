@@ -19,6 +19,39 @@ $order_items_query = mysqli_query($conn, "
     GROUP BY orders.id
     ORDER BY orders.id DESC
 ");
+// Fetch admin account details
+$user_id = $_SESSION['user_id'];
+$admin_query = mysqli_query($conn, "SELECT first_name, last_name, email FROM users WHERE id = '$user_id'");
+$admin = mysqli_fetch_assoc($admin_query);
+
+// Fetch notifications and unread count
+$notifications_query = mysqli_query($conn, "
+    SELECT 
+        orders.id AS order_id, 
+        GROUP_CONCAT(products.name SEPARATOR ', ') AS product_names, 
+        orders.status 
+    FROM orders
+    INNER JOIN order_items ON orders.id = order_items.order_id
+    INNER JOIN products ON order_items.product_id = products.id
+    WHERE orders.status IN ('Canceled', 'Received')
+    GROUP BY orders.id, orders.status
+    ORDER BY orders.created_at DESC
+");
+
+// Test the unread notification count query
+$unread_query = mysqli_query($conn, "
+    SELECT COUNT(*) AS unread_count 
+    FROM orders 
+    WHERE is_read = 0 AND status IN ('Canceled', 'Received')
+");
+
+if (!$unread_query) {
+    die("SQL Error: " . mysqli_error($conn));
+}
+
+$unread_result = mysqli_fetch_assoc($unread_query);
+$unread_count = $unread_result['unread_count'];
+
 
 $order_items = [];
 while ($row = mysqli_fetch_assoc($order_items_query)) {
@@ -41,8 +74,299 @@ if (isset($_POST['update_status'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transaction Management</title>
     <link rel="stylesheet" href="homepage.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        *{
+   font-family: 'Poppins', sans-serif;
+   margin:0; padding:0;
+   box-sizing: border-box;
+   outline: none; border:none;
+   text-decoration: none;
+   text-transform: capitalize;
+}
+.modal {
+   display: none;
+   position: fixed;
+   z-index: 1000;
+   left: 0;
+   top: 0;
+   width: 100%;
+   height: 100%;
+   background-color: rgba(0, 0, 0, 0.5);
+   justify-content: center;
+   align-items: center;
+}
+
+.modal-content {
+   background-color: #fff;
+   padding: 20px;
+   border-radius: 8px;
+   text-align: center;
+   width: 300px;
+   position: relative;
+}
+
+.close-btn {
+   position: absolute;
+   top: 10px;
+   right: 20px;
+   cursor: pointer;
+   font-size: 18px;
+   color: #888;
+}
+
+.close-btn:hover {
+   color: #000;
+}
+.notification-bell {
+   position: relative;
+   display: inline-block;
+   cursor: pointer;
+   font-size: 25px;
+   color: white;
+}
+.profile-icon {
+   position: relative;
+   display: inline-block;
+   cursor: pointer;
+   font-size: 25px;
+   color: white;
+margin-left: 30px;
+}
+
+.notification-badge {
+   position: absolute;
+   top: -8px;
+   right: -10px;
+   background-color: red;
+   color: white;
+   border-radius: 50%;
+   padding: 3px 8px;
+   font-size: 10px;
+   font-weight: bold;
+   transition: opacity 0.3s ease-out;
+}
+
+.notification-badge.hidden {
+   opacity: 0;
+   visibility: hidden;
+}
+
+       .modal {
+           display: none;
+           position: fixed;
+           top: 0;
+           left: 0;
+           width: 100%;
+           height: 100%;
+           background-color: rgba(0, 0, 0, 0.5);
+           justify-content: center;
+           align-items: center;
+       }
+
+       .modal-content {
+           background-color: white;
+           padding: 20px;
+           border-radius: 8px;
+           width: 400px;
+           position: relative;
+       }
+
+       .close-btn {
+           position: absolute;
+           top: 10px;
+           right: 10px;
+           cursor: pointer;
+           font-size: 20px;
+       }
+.modal {
+   display: none;
+   position: fixed;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   background-color: rgba(0, 0, 0, 0.5);
+   justify-content: center;
+   align-items: center;
+   z-index: 1000;
+}
+
+.modal-content {
+   background-color: white;
+   padding: 20px;
+   border-radius: 15px;
+   width: 400px;
+   max-height: 70vh;
+   overflow: hidden;
+   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+   position: relative;
+   display: flex;
+   flex-direction: column;
+   gap: 15px;
+}
+
+.notification-container {
+   max-height: 300px;
+   overflow-y: auto;
+   padding-right: 10px;
+}
+
+.notification-item {
+   background-color: #f8f9fa;
+   padding: 15px;
+   border-radius: 8px;
+   margin-bottom: 10px;
+   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+   display: flex;
+   flex-direction: column;
+   gap: 8px;
+}
+
+.notification-header-item {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+}
+
+.notification-header-item strong {
+   color: #333;
+   font-size: 16px;
+}
+
+.order-id {
+   font-size: 12px;
+   color: #888;
+}
+
+.notification-item p {
+   margin: 0;
+   font-size: 14px;
+   color: #555;
+   word-wrap: break-word;
+}
+
+.notification-item small {
+   color: #666;
+   font-size: 12px;
+   
+}
+
+.close-btn {
+   position: absolute;
+   top: 10px;
+   right: 15px;
+   font-size: 20px;
+   cursor: pointer;
+   color: #888;
+   transition: color 0.2s;
+}
+
+.close-btn:hover {
+   color: black;
+}
+
+.notification-header {
+   font-weight: bold;
+   color: #555;
+   font-size: 18px;
+   text-align: center;
+   margin-bottom: 10px;
+}
+
+#notificationContent div {
+   background-color: #f9f9f9;
+   margin-bottom: 10px;
+   padding: 15px;
+   border-radius: 8px;
+   display: flex;
+   flex-direction: column;
+   gap: 5px;
+   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#notificationContent p {
+   margin: 0;
+   font-size: 14px;
+   color: #333;
+}
+
+#notificationContent small {
+   color: #666;
+   font-size: 12px;
+}
+
+.notification-header {
+   font-weight: bold;
+   color: #555;
+   margin-bottom: 10px;
+   text-align: center;
+   font-size: 18px;
+   border-bottom: 1px solid #eee;
+   padding-bottom: 10px;
+}
+               .notification-bell {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    font-size: 25px;
+    color: white;
+}
+.profile-icon {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    font-size: 25px;
+    color: white;
+ margin-left: 30px;
+}
+
+.notification-badge {
+    position: absolute;
+    top: -8px;
+    right: -10px;
+    background-color: red;
+    color: white;
+    border-radius: 50%;
+    padding: 3px 8px;
+    font-size: 10px;
+    font-weight: bold;
+    transition: opacity 0.3s ease-out;
+}
+
+.notification-badge.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 400px;
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 20px;
+        }
            .btn {
             background-color: #a77d54;
             color: white;
@@ -162,7 +486,11 @@ if (isset($_POST['update_status'])) {
             <a href="admin_page.php">BOOK MANAGEMENT</a>
             <a href="transaction_management.php" class="active">TRANSACTION MANAGEMENT</a>
             <a href="inventory.php">INVENTORY MANAGEMENT</a>
-            <a href="user_management.php" class="active">USER MANAGEMENT</a>
+            <a href="user_management.php">USER MANAGEMENT</a>
+     
+   
+
+    </div>
         </div>
     </nav>
 </header>
@@ -379,7 +707,48 @@ if (isset($_POST['update_status'])) {
 </div>
     </section>
 </div>
+<div id="notificationModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeNotificationModal()">&times;</span>
+        <h3 class="notification-header">Notifications</h3>
+        <div id="notificationContainer" class="notification-container">
+            <?php if (mysqli_num_rows($notifications_query) > 0) { 
+                while ($notification = mysqli_fetch_assoc($notifications_query)) { 
+                    $status_message = ($notification['status'] == 'Canceled') 
+                        ? "Order canceled" 
+                        : "Order received";
 
+                    // Detailed notification message
+                    $detailed_message = "{$status_message}: {$notification['product_names']}";
+            ?>
+            <div class="notification-item">
+                <div class="notification-header-item">
+                    <strong><?php echo $status_message; ?></strong>
+                    <span class="order-id">Order ID: <?php echo $notification['order_id']; ?></span>
+                </div>
+                <p><?php echo $notification['product_names']; ?></p>
+                <small>Status: <strong><?php echo $notification['status']; ?></strong></small>
+            </div>
+            <?php } 
+            } else { ?>
+            <p>No notifications available.</p>
+            <?php } ?>
+        </div>
+    </div>
+</div>
+
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeProfileModal()">&times;</span>
+            <h3>Admin Information</h3>
+            <p><strong>Name:</strong> <?php echo htmlspecialchars($admin['first_name'] . ' ' . $admin['last_name']); ?></p>
+            <p><strong>Email:</strong> <?php echo htmlspecialchars($admin['email']); ?></p>
+            <button class="btn btn-logout" onclick="window.location.href='index(2).html'">Logout</button>
+        </div>
+    </div>
+</div>
+
+</div>
 <script>
     const tabs = document.querySelectorAll('.tab-link');
     const tabContents = document.querySelectorAll('.transaction-tab');
@@ -425,6 +794,38 @@ if (isset($_POST['update_status'])) {
         };
         xhr.send('order_id=' + orderId + '&status=' + status);
     }
+    function openNotificationModal() {
+    const modal = document.getElementById('notificationModal');
+    modal.style.display = 'flex';
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', 'mark_notifications_read.php', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            console.log('Notifications marked as read');
+            document.querySelector('.notification-badge').style.display = 'none';
+        }
+    };
+    xhr.send();
+}
+
+function closeNotificationModal() {
+    document.getElementById('notificationModal').style.display = 'none';
+}
+    function openProfileModal() {
+        document.getElementById('profileModal').style.display = 'flex';
+    }
+
+    function closeProfileModal() {
+        document.getElementById('profileModal').style.display = 'none';
+    }
+    window.onload = function () {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('product_added')) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+};
 </script>
 </body>
 </html>
