@@ -35,8 +35,6 @@ $liked_products = mysqli_query($conn, "SELECT * FROM user_likes WHERE user_id = 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
       
-
-        /* Feedback Notification */
         #feedback {
             position: fixed;
             bottom: 20px;
@@ -206,7 +204,7 @@ $liked_products = mysqli_query($conn, "SELECT * FROM user_likes WHERE user_id = 
     <div id="cartModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal()">&times;</span>
-            <img id="modalImage" src="" alt="Product Image">
+            
             <h3 id="modalProductName"></h3>
             <p id="modalProductPrice"></p>
             <p id="totalPrice">Total: ₱<span id="totalPriceValue"></span></p>
@@ -380,7 +378,7 @@ window.onload = function () {
         <div class="footer-section logo-section">
         <div class="logo">
         
-                <a href="/"><img src="img/logo.png" alt="logo"></a>
+                <a href="homepage.php"><img src="img/logo.png" alt="logo"></a>
                 
             </div>
         
