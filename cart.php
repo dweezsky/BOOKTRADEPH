@@ -60,49 +60,53 @@ $cart_items = mysqli_query($conn, "
     <div class="container" style="max-width: 1000px; margin: auto;">
         <h2>Your Cart</h2>
         <table class="cart-table" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-            <thead>
-                <tr>
-                    <th>Select</th>
-                    <th>Product Image</th>
-                    <th>Product Name</th>
-                    <th>Price</th>
-                    <th>Quantity</th>
-                    <th>Total</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="cartItems">
-                <?php
-                $totalAmount = 0;
-                if (mysqli_num_rows($cart_items) > 0) {
-                    while ($item = mysqli_fetch_assoc($cart_items)) {
-                        $item_total = $item['price'] * $item['quantity'];
-                        $totalAmount += $item_total;
-                ?>
-                    <tr>
-                        <td><input type="checkbox" class="select-item" onchange="updateTotal()" data-price="<?php echo $item_total; ?>"></td>
-                        <td><img src="uploaded_img/<?php echo $item['image']; ?>" style="width: 100px;"></td>
-                        <td><?php echo $item['name']; ?></td>
-                        <td class="price">₱<?php echo number_format($item['price'], 2); ?></td>
-                        <td><input type="number" value="<?php echo $item['quantity']; ?>" min="1" onchange="updateQuantity(<?php echo $item['id']; ?>, this.value)"></td>
-                        <td class="item-total">₱<?php echo number_format($item_total, 2); ?></td>
-                        <td><button class="btn" onclick="removeFromCart(<?php echo $item['id']; ?>)">Remove</button></td>
-                    </tr>
-                <?php
-                    }
-                } else {
-                ?>
-                    <tr>
-                        <td colspan="7">Your cart is empty</td>
-                    </tr>
-                <?php } ?>
-            </tbody>
-        </table>
+    <thead>
+        <tr>
+            <th>Select</th>
+            <th>Product Image</th>
+            <th>Product Name</th>
+            <th>Price</th>
+            <th>Quantity</th>
+            <th>Total</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="cartItems">
+        <?php
+        if (mysqli_num_rows($cart_items) > 0) {
+            while ($item = mysqli_fetch_assoc($cart_items)) {
+                $item_total = $item['price'] * $item['quantity'];
+        ?>
+        <tr data-id="<?php echo $item['id']; ?>" data-price="<?php echo $item['price']; ?>">
+            <td><input type="checkbox" class="select-item" onchange="updateSelectedTotal()"></td>
+            <td><img src="uploaded_img/<?php echo $item['image']; ?>" style="width: 100px;"></td>
+            <td><?php echo $item['name']; ?></td>
+            <td class="price">₱<?php echo number_format($item['price'], 2); ?></td>
+            <td>
+    <input 
+        type="number" 
+        value="<?php echo $item['quantity']; ?>" 
+        min="1" 
+        onchange="updateQuantity(<?php echo $item['id']; ?>, this)">
+</td>
+            <td class="item-total">₱<?php echo number_format($item_total, 2); ?></td>
+            <td><button class="btn" onclick="removeFromCart(<?php echo $item['id']; ?>)">Remove</button></td>
+        </tr>
+        <?php
+            }
+        } else {
+        ?>
+        <tr>
+            <td colspan="7">Your cart is empty</td>
+        </tr>
+        <?php } ?>
+    </tbody>
+</table>
 
-        <div class="cart-total" style="text-align: right; margin-top: 20px;">
-            <h3>Total Amount: ₱<span id="totalAmount"><?php echo number_format($totalAmount, 2); ?></span></h3>
-            <button class="btn" onclick="checkout()">Proceed to Checkout</button>
-        </div>
+<div class="cart-total" style="text-align: right; margin-top: 20px;">
+    <h3>Total Amount: ₱<span id="selectedTotalAmount">0.00</span></h3>
+    <button class="btn" onclick="checkout()">Proceed to Checkout</button>
+</div>
     </div>
 </section>
 
@@ -121,77 +125,94 @@ $cart_items = mysqli_query($conn, "
 </div>
 
 <script>
-    function updateQuantity(productId, quantity) {
-        if (quantity < 1) return;
+function updateQuantity(productId, quantityInput) {
+    const row = quantityInput.closest('tr'); // Get the row of the product
+    const price = parseFloat(row.dataset.price); // Get the product price from the row's data attribute
+    const quantity = parseInt(quantityInput.value); // Get the new quantity from the input
+    const itemTotal = price * quantity; // Calculate the new item total
 
-        let xhr = new XMLHttpRequest();
-        xhr.open('POST', 'update_cart_quantity.php', true);
-        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-        xhr.onload = function () {
-            if (xhr.status === 200) {
-                updateTotal();
-            }
-        };
-        xhr.send('product_id=' + productId + '&quantity=' + quantity);
-    }
+    // Update the item total display in the table
+    row.querySelector('.item-total').textContent = `₱${itemTotal.toFixed(2)}`;
 
-    function removeFromCart(productId) {
-        let xhr = new XMLHttpRequest();
-        xhr.open('POST', 'remove_from_cart.php', true);
-        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-        xhr.onload = function () {
-            if (xhr.status === 200) {
-                location.reload();
-            }
-        };
-        xhr.send('product_id=' + productId);
-    }
-
-    function updateTotal() {
-        let total = 0;
-        const rows = document.querySelectorAll('#cartItems tr');
-
-        rows.forEach(row => {
-            const price = parseFloat(row.querySelector('.price').textContent.replace('₱', ''));
-            const quantity = parseInt(row.querySelector('input[type="number"]').value);
-            const itemTotal = price * quantity;
-            row.querySelector('.item-total').textContent = `₱${itemTotal.toFixed(2)}`;
-            total += itemTotal;
-        });
-
-        document.getElementById('totalAmount').textContent = total.toFixed(2);
-        document.getElementById('checkoutTotalAmount').textContent = total.toFixed(2);
-    }
-
-    function checkout() {
-        document.getElementById('checkoutModal').style.display = 'flex';
-    }
-
-    function closeModal() {
-        document.getElementById('checkoutModal').style.display = 'none';
-    }
-
-    function confirmCheckout() {
-        const address = document.getElementById('addressInput').value;
-
-        if (!address.trim()) {
-            alert('Please enter a delivery address.');
-            return;
+    // Update the quantity in the backend via AJAX
+    let xhr = new XMLHttpRequest();
+    xhr.open('POST', 'update_cart_quantity.php', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onload = function () {
+        if (xhr.status === 200) {
+            updateSelectedTotal(); // Recalculate the total amount for selected items
         }
+    };
+    xhr.send('product_id=' + productId + '&quantity=' + quantity);
+}
 
-        let xhr = new XMLHttpRequest();
-        xhr.open('POST', 'process_checkout.php', true);
-        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-        xhr.onload = function () {
-            if (xhr.status === 200) {
-                alert('Checkout successful!');
-                location.href = 'order_confirmation.php';
-            } else {
-                alert('Error processing your request.');
-            }
-        };
-        xhr.send('address=' + encodeURIComponent(address));
+function updateSelectedTotal() {
+    let total = 0;
+    const rows = document.querySelectorAll('#cartItems tr'); // Select all rows in the cart
+
+    // Loop through each row and calculate the total for selected items
+    rows.forEach(row => {
+        const checkbox = row.querySelector('.select-item'); // Get the checkbox in the row
+        const price = parseFloat(row.dataset.price); // Get the price from the row's data attribute
+        const quantity = parseInt(row.querySelector('input[type="number"]').value); // Get the quantity from the input field
+
+        if (checkbox.checked) { // Only sum totals for selected items
+            total += price * quantity;
+        }
+    });
+
+    // Update the total amount display
+    document.getElementById('selectedTotalAmount').textContent = total.toFixed(2);
+    document.getElementById('checkoutTotalAmount').textContent = total.toFixed(2);
+}
+
+function checkout() {
+    const selectedItems = Array.from(document.querySelectorAll('.select-item:checked')).map(item => {
+        const row = item.closest('tr');
+        const productId = row.dataset.id;
+        const quantity = row.querySelector('input[type="number"]').value;
+
+        return { id: productId, quantity: parseInt(quantity) }; // Collect product ID and quantity
+    });
+
+    if (selectedItems.length === 0) {
+        alert('Please select at least one item to proceed to checkout.');
+        return;
     }
+
+    document.getElementById('checkoutModal').style.display = 'flex';
+    document.getElementById('checkoutTotalAmount').textContent = document.getElementById('selectedTotalAmount').textContent;
+
+    // Store selected items for checkout
+    sessionStorage.setItem('selectedItems', JSON.stringify(selectedItems));
+}
+function confirmCheckout() {
+    const address = document.getElementById('addressInput').value;
+    const selectedItems = JSON.parse(sessionStorage.getItem('selectedItems'));
+
+    if (!address.trim()) {
+        alert('Please enter a delivery address.');
+        return;
+    }
+
+    let xhr = new XMLHttpRequest();
+    xhr.open('POST', 'process_checkout.php', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onload = function () {
+        if (xhr.status === 200) {
+            alert('Checkout successful!');
+            location.href = 'order_confirmation.php';
+        } else {
+            alert('Error processing your request.');
+        }
+    };
+
+    xhr.send('address=' + encodeURIComponent(address) + '&items=' + encodeURIComponent(JSON.stringify(selectedItems)));
+}
+
+function closeModal() {
+    document.getElementById('checkoutModal').style.display = 'none';
+}
 </script>
 
 </body>

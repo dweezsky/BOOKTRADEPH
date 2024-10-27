@@ -1,23 +1,25 @@
 <?php
 // Include the database connection
 @include 'config.php';
-
 session_start();
-
 // Check if the user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php'); // Redirect to login page if not logged in
     exit;
 }
-
 $user_id = $_SESSION['user_id'];
+$user_query = mysqli_query($conn, "SELECT first_name, last_name, email FROM users WHERE id = '$user_id'");
 
+if ($user_query && mysqli_num_rows($user_query) > 0) {
+    $user = mysqli_fetch_assoc($user_query);
+    $user['name'] = $user['first_name'] . ' ' . $user['last_name']; // Combine first and last names
+} else {
+    $user = ['name' => 'Unknown', 'email' => 'Not available']; // Fallback values if query fails
+}
 // Fetch products from the database
 $select_products = mysqli_query($conn, "SELECT * FROM products");
-
 // Fetch the user's cart and liked products from the database
 $cart_items = mysqli_query($conn, "SELECT * FROM user_cart WHERE user_id = '$user_id'");
-
 // Fetch liked products to be used on the liked_products.php page
 $liked_products = mysqli_query($conn, "SELECT * FROM user_likes WHERE user_id = '$user_id'");
 ?>
@@ -32,74 +34,20 @@ $liked_products = mysqli_query($conn, "SELECT * FROM user_likes WHERE user_id = 
     <link rel="stylesheet" href="homepage.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Modal Styling */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            width: 350px;
-            text-align: center;
-            position: relative;
-        }
-
-        .modal-content img {
-            width: 100px;
-            height: 100px;
-            margin-bottom: 20px;
-        }
-
-        .modal-content h3, .modal-content p {
-            margin-bottom: 10px;
-        }
-
-        .modal-content input {
-            width: 80px;
-            padding: 10px;
-            font-size: 16px;
-            margin-bottom: 20px;
-        }
-
-        .modal-content button {
-            padding: 10px 20px;
-            background-color: #a77d54;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .modal-content button:hover {
-            background-color: #855b3a;
-        }
-
-        .close-btn {
-            position: absolute;
-            top: 10px;
-            right: 20px;
-            cursor: pointer;
-            color: #888;
-            font-size: 18px;
-        }
-
-        .close-btn:hover {
-            color: #000;
-        }
+      
 
         /* Feedback Notification */
         #feedback {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            display: none;
+        }
+        #likeMessage{
             position: fixed;
             bottom: 20px;
             right: 20px;
@@ -159,9 +107,9 @@ $liked_products = mysqli_query($conn, "SELECT * FROM user_likes WHERE user_id = 
             <div class="nav-links">
                 <a href="homepage.php"class="active">Home</a>
                 <a href="my_purchases.php" >My Purchases</a>
-                <a href="about.html">About</a>
-                <a href="contact.html">Contact</a>
-                <a href="account.php">Account</a>
+                <a href="about.php">About</a>
+                <a href="#contact-section">Contact</a>
+                
             </div>
 
             <form class="search-container">
@@ -170,10 +118,43 @@ $liked_products = mysqli_query($conn, "SELECT * FROM user_likes WHERE user_id = 
             </form>
 
             <div class="right-nav">
-                <a href="liked_products.php"><i class="fa-regular fa-heart"></i></a>
-                <a href="cart.php"><i class="fa-solid fa-cart-shopping"></i></a>
+            <a href="liked_products.php"><i class="fa-regular fa-heart"></i></a>
+            <a href="cart.php"><i class="fa-solid fa-cart-shopping"></i></a>
+            <a href="javascript:void(0);" onclick="openNotificationModal()" class="notification-icon-container">
+        <i class="fa-regular fa-bell"></i>
+        <span id="notificationBadge" class="badge">0</span>
+    </a>
+                <a href="javascript:void(0);" onclick="openProfileModal()">
+                    <i class="fa-regular fa-user"></i>
+                </a>
+               
             </div>
-        </nav>
+
+<!-- Notification Modal -->
+<div id="notificationModal" class="notification-modal">
+    <div class="notification-header">
+        <h3>Notifications</h3>
+        <span class="close-btn" onclick="closeNotificationModal()">&times;</span>
+    </div>
+    <div id="notificationContent" class="notification-content">
+        <p>Loading notifications...</p>
+    </div>
+</div>
+</div>
+ <!-- Profile Modal -->
+ <div id="profileModal" class="profile-modal">
+    <div class="profile-modal-content">
+        <span class="close-profile-btn" onclick="closeProfileModal()">&times;</span>
+        <h3>Account Information</h3>
+        <p><strong>Name:</strong> <?php echo htmlspecialchars($user['name']); ?></p>
+        <p><strong>Email:</strong> <?php echo htmlspecialchars($user['email']); ?></p>
+
+        <div class="modal-buttons">
+            <button class="btn" onclick="window.location.href='my_purchases.php'">Purchase History</button>
+            <button class="btn btn-logout" onclick="window.location.href='logout.php'">Logout</button>
+        </div>
+    </div>
+</div>
     </header>
 
     <section class="products">
@@ -218,9 +199,10 @@ $liked_products = mysqli_query($conn, "SELECT * FROM user_likes WHERE user_id = 
             </div>
 
        
+
         </div>
     </section>
-
+   
     <div id="cartModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal()">&times;</span>
@@ -235,27 +217,39 @@ $liked_products = mysqli_query($conn, "SELECT * FROM user_likes WHERE user_id = 
     </div>
 
     <div id="feedback">Product added to cart</div>
-
+    <div id="likeMessage">Product added to cart</div>
     <script>
+        
         // likeProduct Function
-        function likeProduct(productId) {
-            let xhr = new XMLHttpRequest();
-            xhr.open('POST', 'like_product.php', true);
-            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-            xhr.onload = function () {
-                if (xhr.status === 200) {
-                    if (xhr.responseText === 'liked') {
-                        alert('Product added to your liked list.');
-                    } else if (xhr.responseText === 'already_liked') {
-                        alert('This product is already in your liked list.');
-                    } else {
-                        alert('Error: Could not process your request.');
-                    }
-                }
-            };
-            xhr.send('product_id=' + productId);
-        }
+    function likeProduct(productId) {
+        let xhr = new XMLHttpRequest();
+        xhr.open('POST', 'liked_product.php', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                const likeMessageDiv = document.getElementById('likeMessage');
+                likeMessageDiv.innerText = xhr.responseText;
+                likeMessageDiv.classList.add('show');
+
+                // Debug: Log the response to the console
+                console.log('Response:', xhr.responseText);
+
+                // Remove the message after 3 seconds
+                setTimeout(() => {
+                    likeMessageDiv.classList.remove('show');
+                    likeMessageDiv.innerText = '';
+                }, 3000);
+            }
+        };
+
+        xhr.onerror = function () {
+            console.error('An error occurred during the AJAX request.');
+        };
+
+        // Send the product ID to the server
+        xhr.send('product_id=' + productId);
+    }
         // Other existing modal and cart functions
         let selectedProduct = {};
 
@@ -296,6 +290,7 @@ $liked_products = mysqli_query($conn, "SELECT * FROM user_likes WHERE user_id = 
                     }, 2000);
                 }
             };
+            
             xhr.send(`product_id=${selectedProduct.id}&quantity=${quantity}`);
             
             document.getElementById('cartModal').style.display = 'none';
@@ -304,6 +299,118 @@ $liked_products = mysqli_query($conn, "SELECT * FROM user_likes WHERE user_id = 
         function closeModal() {
             document.getElementById('cartModal').style.display = 'none';
         }
+        // Open the notification modal
+        function openNotificationModal() {
+    const modal = document.getElementById('notificationModal');
+    modal.classList.add('show');
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', 'notification.php', true);
+
+    xhr.onload = function () {
+        if (xhr.status === 200) {
+            const response = JSON.parse(xhr.responseText); // Parse the JSON response
+
+            // Update the notification content
+            document.getElementById('notificationContent').innerHTML = response.html;
+
+            // Reset the badge count after viewing notifications
+            document.getElementById('notificationBadge').style.display = 'none';
+        } else {
+            document.getElementById('notificationContent').innerHTML = '<p>No notifications available.</p>';
+        }
+    };
+
+    xhr.onerror = function () {
+        document.getElementById('notificationContent').innerHTML = '<p>Error loading notifications. Please try again.</p>';
+    };
+
+    xhr.send();
+}
+
+// Load unread notification count on page load
+function loadNotificationCount() {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', 'notification.php', true);
+
+    xhr.onload = function () {
+        if (xhr.status === 200) {
+            const response = JSON.parse(xhr.responseText);
+            const badge = document.getElementById('notificationBadge');
+
+            if (response.unread_count > 0) {
+                badge.style.display = 'inline-block';
+                badge.textContent = response.unread_count;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    };
+
+    xhr.send();
+}
+
+// Call this function when the page loads
+window.onload = loadNotificationCount;
+
+function closeNotificationModal() {
+    document.getElementById('notificationModal').classList.remove('show');
+}
+
+ // Open and close the profile modal
+ function openProfileModal() {
+    document.getElementById('profileModal').style.display = 'block';
+    sessionStorage.setItem('profileModalOpen', 'true'); // Store the state as open
+}
+
+function closeProfileModal() {
+    document.getElementById('profileModal').style.display = 'none';
+    sessionStorage.setItem('profileModalOpen', 'false'); // Store the state as closed
+}
+
+// Check modal state on page load and apply the correct state
+window.onload = function () {
+    const isModalOpen = sessionStorage.getItem('profileModalOpen');
+    if (isModalOpen === 'true') {
+        document.getElementById('profileModal').style.display = 'block';
+    } else {
+        document.getElementById('profileModal').style.display = 'none';
+    }
+};
     </script>
+  <footer class="footer">
+    <div class="footer-container">
+        <div class="footer-section logo-section">
+        <div class="logo">
+        
+                <a href="/"><img src="img/logo.png" alt="logo"></a>
+                
+            </div>
+        
+        </div>
+    
+        <div class="footer-section site-map">
+            <h3>Site Map</h3>
+            <ul>
+                <li><a href="homepage.php">Home</a></li>
+                <li><a href="my_purchases.php">My Purchases</a></li>
+                <li><a href="about.php">About</a></li>
+                <li><a href="liked_products.php">Liked Products</a></li>
+                <li><a href="cart.php">Cart</a></li>
+
+            </ul>
+        </div>
+
+        <div class="footer-section contact-section"id="contact-section">
+            <h3>Contact Us</h3>
+            <form class="contact-form">
+                <textarea placeholder="Message" rows="4" required></textarea>
+                <button type="submit">Send</button>
+            </form>
+        </div>
+
+    </div>
+    <p class="copyright">Copyright © 2024 BookTrade PH. All Rights Reserved.</p>
+</footer>
 </body>
 </html>

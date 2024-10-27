@@ -4,12 +4,19 @@ session_start();
 
 // Check if the user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php'); // Redirect to login page
+    header('Location: my_purchases.php');
     exit;
 }
 
 $user_id = $_SESSION['user_id'];
+$user_query = mysqli_query($conn, "SELECT first_name, last_name, email FROM users WHERE id = '$user_id'");
 
+if ($user_query && mysqli_num_rows($user_query) > 0) {
+    $user = mysqli_fetch_assoc($user_query);
+    $user['name'] = $user['first_name'] . ' ' . $user['last_name']; // Combine first and last names
+} else {
+    $user = ['name' => 'Unknown', 'email' => 'Not available']; // Fallback values if query fails
+}
 // Fetch orders based on their status for the logged-in user
 $orders_query = mysqli_query($conn, "
     SELECT orders.id AS order_id, orders.status, orders.created_at, orders.received_at, 
@@ -28,12 +35,19 @@ $orders = [];
 while ($row = mysqli_fetch_assoc($orders_query)) {
     $orders[] = $row;
 }
+// Handle order cancellation
+if (isset($_POST['cancel_order'])) {
+    $order_id = $_POST['order_id'];
+    mysqli_query($conn, "UPDATE orders SET status = 'Canceled' WHERE id = $order_id");
+    header('Location: my_purchases.php');
+    exit;
+}
 
-// Handle user confirmation that the item was received
+// Handle item received confirmation
 if (isset($_POST['confirm_receive'])) {
     $order_id = $_POST['order_id'];
     mysqli_query($conn, "UPDATE orders SET status = 'Completed', received_at = NOW() WHERE id = $order_id");
-    header('Location: my_purchases.php'); // Refresh the page
+    header('Location: my_purchases.php');
     exit;
 }
 ?>
@@ -54,10 +68,10 @@ if (isset($_POST['confirm_receive'])) {
             </div>
             <div class="nav-links">
                 <a href="homepage.php">Home</a>
-                <a href="my_purchases.php" class="active">My Purchases</a>
-                <a href="about.html">About</a>
-                <a href="contact.html">Contact</a>
-                <a href="account.php">Account</a>
+                <a href="my_purchases.php"class="active" >My Purchases</a>
+                <a href="about.php">About</a>
+                <a href="#contact-section">Contact</a>
+                
             </div>
 
             <form class="search-container">
@@ -66,10 +80,42 @@ if (isset($_POST['confirm_receive'])) {
             </form>
 
             <div class="right-nav">
-                <a href="liked_products.php"><i class="fa-regular fa-heart"></i></a>
-                <a href="cart.php"><i class="fa-solid fa-cart-shopping"></i></a>
+            <a href="liked_products.php"><i class="fa-regular fa-heart"></i></a>
+            <a href="cart.php"><i class="fa-solid fa-cart-shopping"></i></a>
+                <a href="javascript:void(0);" onclick="openNotificationModal()">
+                    <i class="fa-regular fa-bell"></i>
+                </a>
+                <a href="javascript:void(0);" onclick="openProfileModal()">
+                    <i class="fa-regular fa-user"></i>
+                </a>
+               
             </div>
-        </nav>
+
+<!-- Notification Modal -->
+<div id="notificationModal" class="notification-modal">
+    <div class="notification-header">
+        <h3>Notifications</h3>
+        <span class="close-btn" onclick="closeNotificationModal()">&times;</span>
+    </div>
+    <div id="notificationContent" class="notification-content">
+        <p>Loading notifications...</p>
+    </div>
+</div>
+</div>
+ <!-- Profile Modal -->
+ <div id="profileModal" class="profile-modal">
+    <div class="profile-modal-content">
+        <span class="close-profile-btn" onclick="closeProfileModal()">&times;</span>
+        <h3>Account Information</h3>
+        <p><strong>Name:</strong> <?php echo htmlspecialchars($user['name']); ?></p>
+        <p><strong>Email:</strong> <?php echo htmlspecialchars($user['email']); ?></p>
+
+        <div class="modal-buttons">
+            <button class="btn" onclick="window.location.href='my_purchases.php'">Purchase History</button>
+            <button class="btn btn-logout" onclick="window.location.href='logout.php'">Logout</button>
+        </div>
+    </div>
+</div>
     </header>
 
 </head>
@@ -82,6 +128,8 @@ if (isset($_POST['confirm_receive'])) {
         <ul>
             <li><a href="#" class="tab-link" data-tab="to-ship">To Ship</a></li>
             <li><a href="#" class="tab-link" data-tab="to-receive">To Receive</a></li>
+            <li><a href="#" class="tab-link" data-tab="rejected">Rejected</a></li>
+            <li><a href="#" class="tab-link" data-tab="canceled">Canceled</a></li>
             <li><a href="#" class="tab-link" data-tab="history">History</a></li>
         </ul>
     </nav>
@@ -93,15 +141,16 @@ if (isset($_POST['confirm_receive'])) {
             <table class="transaction-table">
                 <thead>
                     <tr>
-                        <th>Order ID</th>
+                    <th>Order ID</th>
                         <th>Products</th>
                         <th>Images</th>
                         <th>Total Amount</th>
                         <th>Time of Purchase</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($orders as $order): ?>
+                <?php foreach ($orders as $order): ?>
                     <?php if ($order['status'] == 'To Ship'): ?>
                     <tr>
                         <td><?= $order['order_id']; ?></td>
@@ -113,6 +162,12 @@ if (isset($_POST['confirm_receive'])) {
                         </td>
                         <td>₱<?= number_format($order['total_amount'], 2); ?></td>
                         <td><?= date("F j, Y, g:i a", strtotime($order['created_at'])); ?></td>
+                        <td>
+                            <form method="POST">
+                                <input type="hidden" name="order_id" value="<?= $order['order_id']; ?>">
+                                <button type="submit" name="cancel_order" class="btn btn-danger">Cancel</button>
+                            </form>
+                        </td>
                     </tr>
                     <?php endif; ?>
                     <?php endforeach; ?>
@@ -130,7 +185,6 @@ if (isset($_POST['confirm_receive'])) {
                         <th>Products</th>
                         <th>Images</th>
                         <th>Total Amount</th>
-
                         <th>Time of Purchase</th>
                         <th>Action</th>
                     </tr>
@@ -147,7 +201,6 @@ if (isset($_POST['confirm_receive'])) {
                             <?php endforeach; ?>
                         </td>
                         <td>₱<?= number_format($order['total_amount'], 2); ?></td>
-
                         <td><?= date("F j, Y, g:i a", strtotime($order['created_at'])); ?></td>
                         <td>
                             <form method="POST">
@@ -161,6 +214,69 @@ if (isset($_POST['confirm_receive'])) {
                 </tbody>
             </table>
         </div>
+        <!-- Rejected -->
+        <div class="transaction-tab" id="rejected">
+            <h2>Rejected Transactions</h2>
+            <table class="transaction-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Products</th>
+                        <th>Images</th>
+                        <th>Total Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($orders as $order): ?>
+                    <?php if ($order['status'] == 'Rejected'): ?>
+                    <tr>
+                        <td><?= $order['order_id']; ?></td>
+                        <td><?= $order['products']; ?></td>
+                        <td class="product-images">
+                            <?php foreach (explode(', ', $order['product_images']) as $image): ?>
+                                <img src="uploaded_img/<?= $image; ?>" alt="Product Image">
+                            <?php endforeach; ?>
+                        </td>
+                        <td>₱<?= number_format($order['total_amount'], 2); ?></td>
+                    </tr>
+                    <?php endif; ?>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+<div class="transaction-tab" id="canceled">
+        <h2>Canceled Transactions</h2>
+        <table class="transaction-table">
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Products</th>
+                    <th>Images</th>
+                    <th>Total Amount</th>
+                    <th>Time of Cancellation</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($orders as $order): ?>
+                <?php if ($order['status'] == 'Canceled'): ?>
+                <tr>
+                    <td><?= $order['order_id']; ?></td>
+                    <td><?= $order['products']; ?></td>
+                    <td class="product-images">
+                        <?php foreach (explode(', ', $order['product_images']) as $image): ?>
+                        <img src="uploaded_img/<?= $image; ?>" alt="Product Image">
+                        <?php endforeach; ?>
+                    </td>
+                    <td>₱<?= number_format($order['total_amount'], 2); ?></td>
+                    <td><?= date("F j, Y, g:i a", strtotime($order['created_at'])); ?></td>
+                </tr>
+                <?php endif; ?>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
 
         <!-- History -->
         <div class="transaction-tab" id="history">
@@ -209,7 +325,93 @@ if (isset($_POST['confirm_receive'])) {
             document.getElementById(targetTab).classList.add('active');
         });
     });
-</script>
+     // Open the notification modal
+        function openNotificationModal() {
+    const modal = document.getElementById('notificationModal');
+    modal.classList.add('show'); // Open the modal
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', 'notification.php', true); // Fetch notifications via AJAX
+
+    xhr.onload = function () {
+        if (xhr.status === 200) {
+            console.log('Notification Response:', xhr.responseText); // Debugging
+
+            document.getElementById('notificationContent').innerHTML = xhr.responseText;
+        } else {
+            document.getElementById('notificationContent').innerHTML = '<p>No notifications available.</p>';
+        }
+    };
+
+    xhr.onerror = function () {
+        console.error('Error loading notifications.');
+        document.getElementById('notificationContent').innerHTML = '<p>Error loading notifications. Please try again.</p>';
+    };
+
+    xhr.send();
+}
+
+function closeNotificationModal() {
+    document.getElementById('notificationModal').classList.remove('show');
+}
+
+ // Open and close the profile modal
+ function openProfileModal() {
+    document.getElementById('profileModal').style.display = 'block';
+    sessionStorage.setItem('profileModalOpen', 'true'); // Store the state as open
+}
+
+function closeProfileModal() {
+    document.getElementById('profileModal').style.display = 'none';
+    sessionStorage.setItem('profileModalOpen', 'false'); // Store the state as closed
+}
+
+// Check modal state on page load and apply the correct state
+window.onload = function () {
+    const isModalOpen = sessionStorage.getItem('profileModalOpen');
+    if (isModalOpen === 'true') {
+        document.getElementById('profileModal').style.display = 'block';
+    } else {
+        document.getElementById('profileModal').style.display = 'none';
+    }
+};
+    </script>
+
+  <footer class="footer">
+    <div class="footer-container">
+        <div class="footer-section logo-section">
+        <div class="logo">
+        
+                <a href="/"><img src="img/logo.png" alt="logo"></a>
+                
+            </div>
+        
+        </div>
+    
+        <div class="footer-section site-map">
+            <h3>Site Map</h3>
+            <ul>
+                <li><a href="homepage.php">Home</a></li>
+                <li><a href="my_purchases.php">My Purchases</a></li>
+                <li><a href="about.php">About</a></li>
+                <li><a href="liked_products.php">Liked Products</a></li>
+                <li><a href="cart.php">Cart</a></li>
+
+            </ul>
+        </div>
+
+        <div class="footer-section contact-section"id="contact-section">
+            <h3>Contact Us</h3>
+            <form class="contact-form">
+                <textarea placeholder="Message" rows="4" required></textarea>
+                <button type="submit">Send</button>
+            </form>
+        </div>
+
+    </div>
+    <p class="copyright">Copyright © 2024 BookTrade PH. All Rights Reserved.</p>
+</footer>
+
 
 </body>
 </html>

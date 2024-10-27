@@ -8,64 +8,67 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
-
-// Fetch user details
-$user_query = mysqli_query($conn, "SELECT first_name, last_name FROM users WHERE id = '$user_id'");
-$user = mysqli_fetch_assoc($user_query);
-$first_name = $user['first_name'];
-$last_name = $user['last_name'];
-
-// Capture the address from the request
 $address = mysqli_real_escape_string($conn, $_POST['address']);
+$selected_items = json_decode($_POST['items'], true); // Get selected items
 
-// Fetch cart items and ensure correct quantities
-$cart_items = mysqli_query($conn, "
-    SELECT products.*, user_cart.quantity 
-    FROM products
-    INNER JOIN user_cart ON products.id = user_cart.product_id
-    WHERE user_cart.user_id = '$user_id'
+// Create a new order
+mysqli_query($conn, "
+    INSERT INTO orders (user_id, first_name, last_name, address, status, created_at) 
+    VALUES (
+        '$user_id', 
+        (SELECT first_name FROM users WHERE id = '$user_id'), 
+        (SELECT last_name FROM users WHERE id = '$user_id'), 
+        '$address', 'To Ship', NOW()
+    )
 ");
 
-if (mysqli_num_rows($cart_items) > 0) {
+$order_id = mysqli_insert_id($conn);
+$total_amount = 0;
 
-    // Insert new order into the orders table
-    $order_inserted = mysqli_query($conn, "
-        INSERT INTO orders (user_id, first_name, last_name, total_amount, address, status, created_at) 
-        VALUES ('$user_id', '$first_name', '$last_name', 0, '$address', 'To Ship', NOW())
-    ");
-    $order_id = mysqli_insert_id($conn);
+// Loop through the selected items to insert them into `order_items` and update product stock
+foreach ($selected_items as $product) {
+    $product_id = $product['id'];
+    $quantity = $product['quantity'];
 
-    $total_amount = 0;
+    // Fetch the product price and stock
+    $product_query = mysqli_query($conn, "SELECT price, stock FROM products WHERE id = '$product_id'");
+    $product_data = mysqli_fetch_assoc($product_query);
+    $price = $product_data['price'];
+    $current_stock = $product_data['stock'];
 
-    // Insert each cart item as an order item
-    while ($item = mysqli_fetch_assoc($cart_items)) {
-        $quantity = $item['quantity'];
-        $item_total = $item['price'] * $quantity;
-        $total_amount += $item_total;
-
-        $product_id = $item['id'];
-
-        mysqli_query($conn, "
-            INSERT INTO order_items (order_id, product_id, quantity, price)
-            VALUES ('$order_id', '$product_id', '$quantity', '{$item['price']}')
-        ");
-
-        // Update the product stock based on the quantity purchased
-        mysqli_query($conn, "
-            UPDATE products 
-            SET stock = stock - '$quantity' 
-            WHERE id = '$product_id'
-        ");
+    // Check if there is enough stock available
+    if ($current_stock < $quantity) {
+        echo "Not enough stock for product ID: $product_id";
+        exit;
     }
 
-    // Update the total amount in the orders table
-    mysqli_query($conn, "UPDATE orders SET total_amount = '$total_amount' WHERE id = '$order_id'");
+    // Calculate item total and add to the total amount
+    $item_total = $price * $quantity;
+    $total_amount += $item_total;
 
-    // Clear the user's cart after the purchase
-    mysqli_query($conn, "DELETE FROM user_cart WHERE user_id = '$user_id'");
+    // Insert the item into the `order_items` table
+    mysqli_query($conn, "
+        INSERT INTO order_items (order_id, product_id, quantity, price) 
+        VALUES ('$order_id', '$product_id', '$quantity', '$price')
+    ");
 
-    echo 'success';
-} else {
-    echo 'Cart is empty';
+    // Update the product stock
+    $new_stock = $current_stock - $quantity;
+    mysqli_query($conn, "
+        UPDATE products 
+        SET stock = '$new_stock' 
+        WHERE id = '$product_id'
+    ");
+
+    // Remove the purchased items from the cart
+    mysqli_query($conn, "
+        DELETE FROM user_cart 
+        WHERE product_id = '$product_id' AND user_id = '$user_id'
+    ");
 }
+
+// Update the total amount in the orders table
+mysqli_query($conn, "UPDATE orders SET total_amount = '$total_amount' WHERE id = '$order_id'");
+
+echo 'success';
 ?>
